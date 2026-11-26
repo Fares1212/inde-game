@@ -1,0 +1,263 @@
+{
+  "format": 1,
+  "basin_units": 100000000,
+  "tide_seconds": 156,
+  "prestige_growth": 1.55,
+  "prestige_capacity": 0.34,
+  "tools": [
+    {
+      "title": "Cuillère à café",
+      "capacity": 1,
+      "scoop": 1,
+      "price": 0,
+      "gate": 0,
+      "delivery": 1,
+      "auto_rate": 0,
+      "verb": "Puiser",
+      "description": "Juste assez pour entendre le premier plic."
+    },
+    {
+      "title": "Louche",
+      "capacity": 1600,
+      "scoop": 800,
+      "price": 8,
+      "gate": 1,
+      "delivery": 4,
+      "auto_rate": 0,
+      "verb": "Loucher",
+      "description": "Deux gestes ronds et la louche est pleine."
+    },
+    {
+      "title": "Seau à anse",
+      "capacity": 70000,
+      "scoop": 35000,
+      "price": 38,
+      "gate": 6000,
+      "delivery": 10,
+      "auto_rate": 0,
+      "verb": "Remplir le seau",
+      "description": "Porte une belle charge et choisis ton chemin de retour."
+    },
+    {
+      "title": "Pompe à pédale",
+      "capacity": 1100000,
+      "scoop": 220000,
+      "price": 155,
+      "gate": 420000,
+      "delivery": 24,
+      "auto_rate": 0,
+      "verb": "Pomper",
+      "description": "Maintiens la commande pour pédaler. Le tuyau remplit le réservoir."
+    },
+    {
+      "title": "Éoliennes-écopes",
+      "capacity": 3600000,
+      "scoop": 1200000,
+      "price": 420,
+      "gate": 9000000,
+      "delivery": 45,
+      "auto_rate": 65000,
+      "verb": "Actionner les écopes",
+      "description": "Les pales évacuent aussi de l’eau pendant ton exploration."
+    },
+    {
+      "title": "Éponge géante",
+      "capacity": 9500000,
+      "scoop": 1900000,
+      "price": 790,
+      "gate": 36000000,
+      "delivery": 70,
+      "auto_rate": 90000,
+      "verb": "Éponger",
+      "description": "Imbibe-la dans la mer et essore-la au déversoir. La chaîne approche."
+    }
+  ],
+  "zones": [
+    {
+      "title": "Lagon",
+      "units": 0,
+      "water": 3.4,
+      "depth": 0,
+      "tint": "6BCDC3",
+      "mark": "Une cuillère. Un océan. Faisons les comptes."
+    },
+    {
+      "title": "Récif",
+      "units": 6000,
+      "water": 1.65,
+      "depth": 1,
+      "tint": "46B7B0",
+      "mark": "Le corail sèche au soleil. Quelque chose brille entre ses branches."
+    },
+    {
+      "title": "Forêt de varech",
+      "units": 420000,
+      "water": -0.65,
+      "depth": 2,
+      "tint": "398B83",
+      "mark": "Le varech portait l’ombre des bateaux. Il montre maintenant leurs noms."
+    },
+    {
+      "title": "Cimetière d’épaves",
+      "units": 9000000,
+      "water": -3.1,
+      "depth": 3,
+      "tint": "326F78",
+      "mark": "Une coque craque. Ici, même les navires finissent par toucher terre."
+    },
+    {
+      "title": "Plaine abyssale",
+      "units": 36000000,
+      "water": -5.9,
+      "depth": 4,
+      "tint": "315568",
+      "mark": "Ces dalles sont trop régulières pour avoir poussé sous la mer."
+    },
+    {
+      "title": "Fosse",
+      "units": 76000000,
+      "water": -8.4,
+      "depth": 5,
+      "tint": "304157",
+      "mark": "Suis la chaîne. Elle plonge dans l’eau et remonte jusqu’aux nuages."
+    }
+  ],
+  "last_water": -10.7,
+  "finds": [
+    {
+      "title": "Coquille rayée",
+      "region": 0,
+      "value": 3,
+      "shape": "shell",
+      "lore": "Trois raies sur la nacre. Bernard les compte avant de payer."
+    },
+    {
+      "title": "Pièce au bigorneau",
+      "region": 0,
+      "value": 4,
+      "shape": "coin",
+      "lore": "Elle porte le profil d’un mollusque qui avait visiblement du pouvoir."
+    },
+    {
+      "title": "Bouteille à marée",
+      "region": 0,
+      "value": 5,
+      "shape": "bottle",
+      "lore": "Son message demande de rendre la bouteille au prochain reflux."
+    },
+    {
+      "title": "Corail de poche",
+      "region": 1,
+      "value": 8,
+      "shape": "coral",
+      "lore": "Le creux de ses branches garde un peu de la dernière pluie."
+    },
+    {
+      "title": "Tasse d’écume",
+      "region": 1,
+      "value": 11,
+      "shape": "cup",
+      "lore": "Elle a la même anse que la maison de Bernard. Il change de sujet."
+    },
+    {
+      "title": "Mosaïque bleue",
+      "region": 1,
+      "value": 9,
+      "shape": "tile",
+      "lore": "Quatre bords droits. Un angle de salle de bain dans un récif."
+    },
+    {
+      "title": "Peigne de varech",
+      "region": 2,
+      "value": 15,
+      "shape": "comb",
+      "lore": "Les algues ont poussé dans le sens des dents."
+    },
+    {
+      "title": "Flotteur de verre",
+      "region": 2,
+      "value": 18,
+      "shape": "float",
+      "lore": "Quelque chose a gravé un niveau maximum sur sa panse."
+    },
+    {
+      "title": "Savonnette fossile",
+      "region": 2,
+      "value": 21,
+      "shape": "soap",
+      "lore": "Sous l’odeur du large, elle sent encore la lavande."
+    },
+    {
+      "title": "Cloche de brume",
+      "region": 3,
+      "value": 32,
+      "shape": "bell",
+      "lore": "Elle annonce une arrivée au lieu d’un naufrage."
+    },
+    {
+      "title": "Hublot d’ambre",
+      "region": 3,
+      "value": 36,
+      "shape": "ring",
+      "lore": "Une anémone habite son cadre comme une vieille dame à la fenêtre."
+    },
+    {
+      "title": "Maillon d’essai",
+      "region": 3,
+      "value": 42,
+      "shape": "link",
+      "lore": "La rayure sur la coque voisine a exactement sa largeur."
+    },
+    {
+      "title": "Clé de faïence",
+      "region": 4,
+      "value": 55,
+      "shape": "key",
+      "lore": "La petite tête bleue représente un robinet."
+    },
+    {
+      "title": "Rose des bains",
+      "region": 4,
+      "value": 59,
+      "shape": "tile",
+      "lore": "Sur cette dalle, le nord s’appelle « chaud » et le sud « froid »."
+    },
+    {
+      "title": "Perle de siphon",
+      "region": 4,
+      "value": 70,
+      "shape": "float",
+      "lore": "Quand on la secoue, on entend la mer dans la pièce d’à côté."
+    },
+    {
+      "title": "Dernier bouchon",
+      "region": 5,
+      "value": 84,
+      "shape": "soap",
+      "lore": "Bernard a toujours soutenu que ce modèle était décoratif."
+    },
+    {
+      "title": "Jeton de trop-plein",
+      "region": 5,
+      "value": 91,
+      "shape": "coin",
+      "lore": "Valable pour une baignoire du dessus. Date de retour illisible."
+    },
+    {
+      "title": "Écaille de bonde",
+      "region": 5,
+      "value": 100,
+      "shape": "ring",
+      "lore": "Elle tient dans ta poche. Sa sœur a la taille d’une place de village."
+    }
+  ],
+  "voices": {
+    "intro": "Une cuillère, un océan. Moi, j’aurais commencé par le café. Tu vois le déversoir sur la plage ? Essaie toujours.",
+    "shop": "Bienvenue au comptoir. Du beau, du rare, ou n’importe quoi qui brille. Je prends.",
+    "first": "Un millionième de pour cent. La mer commence à se faire du souci.",
+    "sale": "Ça vient du fond ? Je m’en doutais. Ça sent l’histoire et un petit peu la vase.",
+    "buy": "Essaie-le dès la prochaine marée. Si ça fuit, c’est que tu le tiens à l’envers.",
+    "plug": "Moi ? Je savais qu’il y avait une bonde. J’ignorais seulement de quel côté nous étions.",
+    "return": "Ah, te revoilà. La grande mer a commandé une petite cuillère."
+  }
+}

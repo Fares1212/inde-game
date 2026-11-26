@@ -1,0 +1,34 @@
+config_version=5
+
+[application]
+config/name="SPOONFUL"
+config/description="Un conte maritime à la petite cuillère."
+config/version="1.0.0"
+run/main_scene="res://scenes/Boot.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://art/icon.svg"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="SPOONFUL"
+
+[autoload]
+Voyage="*res://scripts/voyage.gd"
+Sound="*res://scripts/sound.gd"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1152
+window/size/window_height_override=648
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/screen_space_aa=1
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.35,0.65,0.68,1)
+
+[audio]
+general/text_to_speech=true
+driver/enable_input=false

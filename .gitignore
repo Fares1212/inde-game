@@ -1,0 +1,9 @@
+.godot/
+.import/
+*.tmp
+*.log
+build/
+out/
+/release/
+/Game/audio/generated/
+.DS_Store

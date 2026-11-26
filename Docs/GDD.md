@@ -4,7 +4,7 @@ En vue subjective, vider un océan à la cuillère et découvrir qui a installé
 
 ## Les détours qui paient
 
-Un trajet rapide donne un bon de pompage à chaque livraison. Un détour à marée basse permet de vendre plusieurs objets chez Bernard et de remplir les dix-huit notices du carnet. Les améliorations combinent un seuil de vidange et un prix. Toutes les valeurs de départ, les trouvailles et les répliques sont dans [les données du bassin](../Content/basins.json).
+Un trajet rapide donne un bon de pompage à chaque livraison. Un détour à marée basse permet de vendre plusieurs objets chez Bernard et de remplir les dix-huit notices du carnet. Les améliorations combinent un seuil de vidange et un prix. Toutes les valeurs de départ, les trouvailles et les répliques sont dans [les données du bassin](../Game/Data/basins.json).
 
 | Outil | Capacité | Prix en coquilles | Ce que cela change |
 |---|---:|---:|---|

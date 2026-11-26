@@ -1,6 +1,8 @@
 extends Node
 
 func _ready() -> void:
+	if "--spoonful-balance" in OS.get_cmdline_user_args():
+		get_tree().root.call_deferred("add_child",preload("res://qa/balance.gd").new());return
 	if "--spoonful-test" in OS.get_cmdline_user_args():
 		var probe := preload("res://qa/probe.gd").new()
 		get_tree().root.call_deferred("add_child", probe)

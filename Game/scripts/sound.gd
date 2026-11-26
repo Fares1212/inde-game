@@ -12,7 +12,7 @@ var muted_test:=false
 func _ready()->void:
 	rng.seed=89573
 	muted_test=DisplayServer.get_name()=="headless"
-	for name in ["Music","SFX","Voice","Ambience"]:
+	for name in ["Music","SFX","Voice","Ambience","UI"]:
 		if AudioServer.get_bus_index(name)<0:AudioServer.add_bus();AudioServer.set_bus_name(AudioServer.bus_count-1,name)
 	for j in 10:
 		var player=AudioStreamPlayer.new();add_child(player);player.bus="SFX";effects.append(player)
@@ -22,16 +22,16 @@ func _ready()->void:
 	for k in ["theme","surf","scoop0","scoop1","scoop2","scoop3","pour0","pour1","step0","step1","step2","wade0","wade1","coin0","coin1","buy0","reveal0","creak0","plug0","click0"]:
 		var path="res://audio/generated/"+k+".ogg"
 		if ResourceLoader.exists(path):samples[k]=load(path)
-	for k in Voyage.db.voices:
-		var path="res://audio/generated/vo_"+str(k)+".ogg"
-		if ResourceLoader.exists(path):samples["vo_"+k]=load(path)
+	for b in ["Music","Ambience"]:
+		var comp:=AudioEffectCompressor.new();comp.sidechain="Voice";comp.threshold=-28.;comp.ratio=4.;comp.attack_us=1200.;comp.release_ms=190.
+		AudioServer.add_bus_effect(AudioServer.get_bus_index(b),comp)
 	apply_settings()
 
 func apply_settings()->void:
 	if not is_instance_valid(song):return
-	for k in {"Music":"music","SFX":"effects","Voice":"voice","Ambience":"effects"}:
+	for k in {"Music":"music","SFX":"effects","Voice":"voice","Ambience":"ambience","UI":"ui"}:
 		var bus=AudioServer.get_bus_index(k)
-		var opt_key={"Music":"music","SFX":"effects","Voice":"voice","Ambience":"effects"}[k]
+		var opt_key={"Music":"music","SFX":"effects","Voice":"voice","Ambience":"ambience","UI":"ui"}[k]
 		var vol=float(Voyage.opt[opt_key])
 		AudioServer.set_bus_mute(bus,vol<=.005)
 		AudioServer.set_bus_volume_db(bus,linear_to_db(maxf(.0001,vol)))
@@ -50,12 +50,8 @@ func effect(which:String,level:=1.0)->void:
 	var k=which+str(rng.randi_range(0,n-1))
 	if not samples.has(k):return
 	var player:AudioStreamPlayer=effects[slots];slots=(slots+1)%effects.size()
+	player.bus="UI" if which=="click" else "SFX"
 	player.stream=samples[k];player.pitch_scale=rng.randf_range(.92,1.08);player.volume_db=linear_to_db(level*rng.randf_range(.87,1.0));player.play()
-
-func voice(k:String)->void:
-	if muted_test or float(Voyage.opt.voice)<.005:return
-	if samples.has("vo_"+k):
-		speech.stop();speech.stream=samples["vo_"+k];speech.play()
 
 func stop_all()->void:
 	for player in effects+[song,sea,speech]:
@@ -66,3 +62,14 @@ func stop_all()->void:
 
 func _exit_tree()->void:
 	stop_all()
+
+func layer(n:int)->void:
+	if muted_test:return
+	speech.bus="Music";speech.volume_db=-8.;speech.pitch_scale=1.+(n%4)*.035
+	speech.stream=load("res://audio/generated/bells.ogg");speech.play()
+
+func ending(k:String)->void:
+	if muted_test:return
+	song.stop();speech.stop();speech.bus="Music";speech.pitch_scale=1.;speech.volume_db=-2.
+	sea.volume_db=-29. if k=="empty" else -12.
+	speech.stream=load("res://audio/generated/"+k+".ogg");speech.play()

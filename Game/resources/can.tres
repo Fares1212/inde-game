@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/can.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "can"
+title = "Arrosoir de cuivre"
+capacity = 14000
+scoop = 2800
+stroke_seconds = 0.8
+spill_rate = 0.01
+slowdown = 0.16
+price = 290
+gate = 0.22
+delivery = 9
+leverage = 129
+auto_rate = 0
+verb = "Immerger l’arrosoir"
+description = "Le bec long dirige le jet. Son col étroit garde mieux l’eau pendant la course."
+model = ExtResource("2")

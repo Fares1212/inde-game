@@ -2,10 +2,11 @@ extends Node3D
 
 const F=preload("res://scripts/forms.gd")
 const S=preload("res://scripts/shore.gd")
-const SUN=Vector3(-0.46,0.34,-0.82)
-const DOCK=Vector2(-3.6,74.7)
-const SHOP=Vector2(6.1,77.0)
-const PORTS=[Vector2(-3.6,74.7),Vector2(1.8,65),Vector2(-1.7,55),Vector2(1.6,44),Vector2(-1.1,32),Vector2(1.7,18)]
+const SUN=Vector3(-.48,.147,-.865)
+const Craft=preload("res://scripts/shorecraft.gd")
+const DOCK=Vector2(-7.2,84.5)
+const SHOP=Vector2(6.8,83.3)
+const PORTS=[Vector2(-7.2,84.5),Vector2(-12,79),Vector2(-13,73),Vector2(-14,65),Vector2(-15,55),Vector2(-15,43)]
 const RADII=[74.6,65.9,56.0,46.0,34.0,19.0]
 var rng=RandomNumberGenerator.new()
 var water:MeshInstance3D
@@ -14,6 +15,8 @@ var sand:ShaderMaterial
 var sun:DirectionalLight3D
 var sky_env:WorldEnvironment
 var crab:Node3D
+var lantern:MeshInstance3D
+var lamp_material:StandardMaterial3D
 var shipwrecks:Array=[]
 var foliage:Array=[]
 var finds:Array=[]
@@ -45,6 +48,9 @@ func build() -> void:
 	water=surf[0];sea=surf[1];sand=surf[2]
 	make_scenery()
 	make_beach()
+	for spec in [[-14.,80.,1.18,.1],[13.,80.,1.44,1.8],[18.,75.,1.14,2.5],[23.,72.,1.52,-.4],[-28.,66.,.98,1.1],[34.,71.,1.46,.8],[-19.,87.,1.49,.5],[12.,89.,1.1,1.0]]:
+		Craft.palm(self,Vector2(spec[0],spec[1]),spec[2],spec[3])
+	Craft.pools(self)
 	make_props()
 	make_finds()
 	make_plug()
@@ -58,7 +64,7 @@ func make_sky() -> void:
 	var sk=Sky.new()
 	var mat=ShaderMaterial.new()
 	mat.shader=preload("res://shaders/horizon.gdshader")
-	mat.set_shader_parameter("painting",preload("res://art/horizon.jpg"))
+	sk.radiance_size=Sky.RADIANCE_SIZE_128
 	sk.sky_material=mat
 	env.sky=sk
 	env.background_mode=Environment.BG_SKY
@@ -81,11 +87,18 @@ func make_sky() -> void:
 	sun.light_energy=.83
 	sun.light_specular=.35
 	sun.light_angular_distance=0.7
-	sun.directional_shadow_max_distance=78
+	sun.directional_shadow_max_distance=35
+	sun.directional_shadow_mode=DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_bias=.045;sun.shadow_normal_bias=1.1;sun.shadow_blur=1.45
 
 func refresh_quality()->void:
 	sun.shadow_enabled=int(Voyage.opt.quality)>0
 	sea.set_shader_parameter("quality",float(Voyage.opt.quality))
+
+func wind_paint(col:Color)->ShaderMaterial:
+	var mat:=ShaderMaterial.new();mat.shader=preload("res://shaders/blades.gdshader")
+	mat.set_shader_parameter("blade",col)
+	return mat
 
 func batch(kind:String,ts:Array,col:Color,shadows:=false)->MultiMeshInstance3D:
 	var mm=MultiMesh.new()
@@ -155,7 +168,7 @@ func make_scenery()->void:
 		if rad<57 and rad>35:
 			for j in 3:reeds.append(tf(S.place(x+0.5*j,z,0.88),Vector3(0.19,1.8+0.26*j,0.10),angle+0.4*j,0.22*sin(i+j)))
 	for i in 3:batch("rock",rocks[i],[Color("#8a8170"),Color("#68867e"),Color("#bd9575")][i])
-	batch("rock",reeds,Color("#517b62"))
+	batch("rock",reeds,Color("#517b62")).material_override=wind_paint(Color("#517b62"))
 	var coral=[]
 	for i in 72:
 		var a=rng.randf()*TAU;var r=rng.randf_range(53,68)
@@ -170,7 +183,10 @@ func make_scenery()->void:
 	flock=batch("rock",birds,Color("#eee6d0"))
 	var tower=F.root(self,S.place(-63,-60))
 	for i in 4:F.piece(tower,"taper",Vector3(0,1.3+i*2.32,0),Vector3(3.8-i*.30,2.65,3.8-i*.30),Color("#eddfb3") if i%2==0 else Color("#af5d48"))
-	F.piece(tower,"tube",Vector3(0,10.2,0),Vector3(2.35,1.65,2.35),Color("#508288"))
+	lantern=F.piece(tower,"tube",Vector3(0,10.2,0),Vector3(2.35,1.65,2.35),Color("#dcab6d"))
+	lamp_material=lantern.material_override.duplicate()
+	lamp_material.emission_enabled=true;lamp_material.emission=Color("#ffdf95")
+	lantern.material_override=lamp_material
 	F.piece(tower,"cone",Vector3(0,11.65,0),Vector3(3.55,1.55,3.55),Color("#8c5340"))
 
 func signpost(p:Vector3,title:String,color:Color)->void:
@@ -197,17 +213,14 @@ func make_beach()->void:
 	for side in [-1,1]:F.piece(self,"box",dockp+Vector3(side*0.89,0.82,-0.48),Vector3(0.1,0.33,0.97),Color("#4e7773"))
 	signpost(dockp+Vector3(-1.9,0,0.1),"DÉVERSOIR",Color("#365d58"))
 	var shop=F.root(self,S.place(SHOP.x,SHOP.y))
-	F.piece(shop,"box",Vector3(0,0.52,0),Vector3(2.28,1.0,1.25),Color("#4e817d"))
-	F.piece(shop,"box",Vector3(0,1.07,0),Vector3(2.60,0.14,1.50),Color("#b68a59"))
-	for x in [-1.26,1.26]:
-		F.piece(shop,"tube",Vector3(x,1.7,-0.42),Vector3(0.13,3.4,0.13),Color("#927353"))
-	for i in 7:
-		F.piece(shop,"box",Vector3((i-3)*0.425,3.16,0),Vector3(0.43,0.10,2.03),Color("#c77852") if i%2==0 else Color("#f1dfb5"),Vector3(-0.12,0,0))
-		F.piece(shop,"box",Vector3((i-3)*0.425,2.95,0.97),Vector3(0.43,0.27,0.07),Color("#c77852") if i%2==0 else Color("#f1dfb5"))
+	Craft.stall(shop)
 	crab=F.owl_shell(shop)
 	crab.position=Vector3(0,1.16,0.05)
 	crab.rotation.y=.27
-	signpost(shop.position+Vector3(1.95,0,0.18),"BERNARD",Color("#395c54"))
+	crab.scale=Vector3.ONE*.85
+	crab.visible=not (Voyage.p.free and Voyage.p.ending=="empty")
+	if Voyage.p.free and Voyage.p.ending=="empty":
+		sky_env.environment.adjustment_enabled=true;sky_env.environment.adjustment_saturation=.24
 	var marker=F.root(self,S.place(-7.0,73.2,.38))
 	F.piece(marker,"ball",Vector3.ZERO,Vector3(.52,.74,.52),Color("#bc5942"))
 	F.piece(marker,"tube",Vector3(0,.08,0),Vector3(.49,.12,.49),Color("#efe0af"))
@@ -224,7 +237,7 @@ func make_beach()->void:
 			var q=S.place(x+rng.randf_range(-.32,.32),z+rng.randf_range(-.28,.28),.25)
 			dunes.append(tf(q,Vector3(.052,.46+rng.randf()*.48,.075),rng.randf()*TAU,lean))
 		pebbles.append(tf(S.place(x+.45,z-.35,.05),Vector3(.25,.12,.31),rng.randf()*TAU))
-	batch("cone",dunes,Color("#7a894e"))
+	batch("cone",dunes,Color("#7a894e")).material_override=wind_paint(Color("#7a894e"))
 	batch("rock",pebbles,Color("#b79776"))
 	var previous=dockp
 	for j in range(1,PORTS.size()):
@@ -281,6 +294,7 @@ func model_find(parent:Node3D,kind:int)->void:
 			for i in ct:
 				var a=(i-(ct-1)*0.5)*0.40
 				F.piece(parent,"rock",Vector3(sin(a)*0.17,0.1+cos(a)*0.09,0),Vector3(0.10,0.43,0.16),base,Vector3(0.12,0,-a))
+		"toy":F.boat(parent,Vector3(0,.1,0),.29,Color("#ae6b43"))
 		"bottle":
 			F.piece(parent,"ball",Vector3(0,0.15,0),Vector3(.25,.41,.25),mint)
 			F.piece(parent,"tube",Vector3(0,.37,0),Vector3(.105,.18,.105),mint)
@@ -314,7 +328,12 @@ func make_plug()->void:
 	F.piece(plug,"ring",Vector3(0,.48,0),Vector3(4.7,.66,4.7),Color("#b49361"))
 	F.piece(plug,"ring",Vector3(0,.78,0),Vector3(1.0,.8,1.1),Color("#bc9561"),Vector3(PI/2,0,0))
 	chain=F.root(self,S.place(0,0,0.82))
-	for i in 67:
+	var pulley=F.root(self,S.place(0,0))
+	for side in [-1.,1.]:
+		F.rod(pulley,Vector3(side*3,0,-1.),Vector3(side*.82,8.,0),.34,Color("#83684a"))
+	F.rod(pulley,Vector3(-1.25,7.9,0),Vector3(1.25,7.9,0),.3,Color("#76664e"))
+	F.piece(pulley,"ring",Vector3(0,7.75,0),Vector3(1.1,.34,1.1),Color("#aa8d55"),Vector3(PI/2,0,0))
+	for i in 9:
 		var y=i*.87
 		F.piece(chain,"ring",Vector3(sin(y*.065)*minf(2.1,y*.06),y,0.0),Vector3(.58,.47,1.12),Color("#6b7365"),Vector3(PI/2,0.0 if i%2==0 else PI/2,0))
 	finale_fleet=F.root(self)
@@ -370,22 +389,38 @@ func splash(pos:Vector3,large:=false)->void:
 	sea.set_shader_parameter("splash_at",elapsed)
 	for j in (13 if large else 7):
 		var drop=splashes[spl_i];spl_i=(spl_i+1)%splashes.size()
+		drop.erase("delay");drop.erase("impact")
 		drop.n.position=pos+Vector3.UP*.13;drop.n.visible=true
 		drop.life=rng.randf_range(.30,.68)
 		drop.v=Vector3(rng.randf_range(-1.4,1.4),rng.randf_range(1.3,3.6),rng.randf_range(-1.4,1.4))
+
+func pour_arc(start:Vector3,finish:Vector3)->void:
+	# Stagger ballistic droplets from the vessel lip to the mouth of the spillway.
+	const FLIGHT:=.38
+	for i in 12:
+		var drop:Dictionary=splashes[spl_i];spl_i=(spl_i+1)%splashes.size()
+		var delay:float=i*.018
+		drop.n.position=start
+		drop.n.visible=false
+		drop["delay"]=delay
+		drop["impact"]=finish
+		drop.life=FLIGHT
+		drop.v=(finish-start)/FLIGHT+Vector3.UP*(4.*FLIGHT)+Vector3(rng.randf_range(-.09,.09),0,rng.randf_range(-.09,.09))
+	sea.set_shader_parameter("splash_pos",Vector2(finish.x,finish.z))
+	sea.set_shader_parameter("splash_at",elapsed+FLIGHT)
 
 func refresh()->void:
 	var next_region=Voyage.region()
 	if current_region!=next_region:
 		sea.set_shader_parameter("shallows",Color(str(Voyage.db.zones[next_region].tint)).darkened(.13))
-		sea.set_shader_parameter("deep",Color(str(Voyage.db.zones[next_region].tint)).darkened(.46))
+		sea.set_shader_parameter("deep",Color("#246887").lerp(Color("#313f56"),next_region/5.))
 	current_region=next_region
 	for i in ports.size():ports[i].visible=i+1<=current_region
 	for i in huts.size():huts[i].visible=i<current_region
 	for rotor in turbines:rotor.get_parent().visible=int(Voyage.p.tier)>=4
 	water.position.y=Voyage.water_y()
 	for find in finds:
-		find.node.visible=find.r<=current_region and not Voyage.p.taken.has(str(find.id)) and find.p.y>water.position.y-.57
+		find.node.visible=find.r<=current_region and not (find.kind==16 and Voyage.p.seen.has("find_16")) and not Voyage.p.taken.has(str(find.id)) and find.p.y>water.position.y-.57
 	plug.visible=current_region==5
 	active_tier=Voyage.p.tier
 
@@ -402,16 +437,33 @@ func animate(dt:float,ending:float=-1.0)->void:
 			if mark.n.visible and (elapsed-mark.at>39 or mark.n.position.y<y-.015):mark.n.visible=false
 	for d in splashes:
 		if d.life<=0:continue
+		if d.get("delay",0.)>0:
+			d.delay-=dt
+			continue
+		d.n.visible=true
 		d.life-=dt;d.n.position+=d.v*dt;d.v.y-=8.0*dt
 		if d.life<=0:d.n.visible=false
 	for boat in shipwrecks:
 		var n=boat.node
-		var bottom=float(boat.floor)+float(boat.s)*.31
+		var axle:Vector3=n.basis.x.normalized()*float(boat.s)*.65
+		var bow=S.ground(n.position.x+axle.x,n.position.z+axle.z)
+		var stern=S.ground(n.position.x-axle.x,n.position.z-axle.z)
+		var bottom=maxf(bow,stern)+float(boat.s)*.20
 		var wet=clampf((y-bottom)/.9,0,1)
 		n.position.y=maxf(bottom,y+sin(elapsed*1.36+boat.phase)*.12)
-		n.rotation.z=lerpf(sin(boat.phase)*.31,sin(elapsed*.92+boat.phase)*.04,wet)
+		n.rotation.z=lerpf(clampf(atan2(bow-stern,axle.length()*2.),-.21,.21),sin(elapsed*.92+boat.phase)*.04,wet)
 	crab.position.y=1.16+sin(elapsed*2.55)*.035
-	crab.get_node("Face").rotation.y=.14*sin(elapsed*1.5)
+	var camera:=get_viewport().get_camera_3d()
+	var head:Node3D=crab.get_node("Face")
+	var look_angle:=.12*sin(elapsed*1.5)
+	if is_instance_valid(camera) and crab.global_position.distance_to(camera.global_position)<12.:
+		var local:=crab.to_local(camera.global_position)
+		look_angle=clampf(atan2(local.x,local.z),-.54,.54)
+	head.rotation.y=lerp_angle(head.rotation.y,look_angle,1.-exp(-dt*5.))
+	for eye:Node3D in head.get_children():
+		if eye.has_meta("blinks"):
+			eye.scale.y=1.-.91*exp(-pow((fmod(elapsed+.32,4.7)-.11)/.064,2.))
+	lamp_material.emission_energy_multiplier=.18+3.8*pow(maxf(0.,cos(elapsed*1.56)),25.)
 	crab.get_node("PinceD").rotation.z=.22*sin(elapsed*2.0)
 	for rotor in turbines:
 		if rotor.get_parent().visible:rotor.rotate_z(dt*(1.55+.42*Voyage.tide()))

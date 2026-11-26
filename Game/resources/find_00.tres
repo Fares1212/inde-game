@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Coquille rayée"
+region = 0
+value = 3
+shape = "shell"
+lore = "Trois raies sur la nacre. Bernard les compte avant de payer."
+id = "find_00"
+journal_id = 0
+rarity = "Courant"

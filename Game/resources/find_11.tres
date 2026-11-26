@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Maillon d’essai"
+region = 3
+value = 42
+shape = "link"
+lore = "La rayure sur la coque voisine a exactement sa largeur."
+id = "find_11"
+journal_id = 11
+rarity = "Rare"

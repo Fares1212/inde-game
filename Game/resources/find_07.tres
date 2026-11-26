@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Flotteur de verre"
+region = 2
+value = 18
+shape = "float"
+lore = "Quelque chose a gravé un niveau maximum sur sa panse."
+id = "find_07"
+journal_id = 7
+rarity = "Insolite"

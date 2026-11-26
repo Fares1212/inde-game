@@ -1,23 +1,17 @@
 shader_type spatial;
 render_mode cull_disabled;
-uniform float tide_level=3.4;
-varying vec3 world_p;
-void vertex(){world_p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;}
-float hash2(vec2 p){return fract(sin(dot(p,vec2(57.25,113.9)))*43758.5453);}
-float tex(vec2 p){vec2 q=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash2(q),hash2(q+vec2(1,0)),f.x),mix(hash2(q+vec2(0,1)),hash2(q+vec2(1)),f.x),f.y);}
-void fragment(){
- vec2 p=world_p.xz;float y=world_p.y;
- float wash=tex(p*0.27)*0.65+tex(p*1.56)*0.25+tex(p*5.0)*0.1;
- vec3 shallow=mix(vec3(0.59,0.44,0.26),vec3(0.93,0.78,0.49),smoothstep(0.1,0.85,wash));
- vec3 seabed=mix(vec3(0.19,0.34,0.33),vec3(0.42,0.47,0.37),wash);
- vec3 col=mix(seabed,shallow,smoothstep(-5.,2.0,y+wash*0.6));
- float wet=1.0-smoothstep(tide_level-0.12,tide_level+0.72,y);col=mix(col,col*vec3(.56,.72,.78),wet*.62);
- float band=100.0;
- band=min(band,abs(y-3.4));band=min(band,abs(y-1.65));band=min(band,abs(y+0.65));band=min(band,abs(y+3.1));band=min(band,abs(y+5.9));band=min(band,abs(y+8.4));
- col=mix(col,vec3(0.85,0.79,0.62),(1.0-smoothstep(0.035,0.14,band+0.035*sin(p.x*0.86)))*0.52);
- float tile=min(abs(fract(p.x*0.48)-0.5),abs(fract(p.y*0.48)-0.5));
- float abyss=1.0-smoothstep(-6.8,-4.9,y);
- vec3 ceramic=mix(vec3(.21,.38,.43),vec3(.38,.55,.55),wash);
- ceramic=mix(vec3(0.12,0.2,0.22),ceramic,smoothstep(.012,.037,tile));
- col=mix(col,ceramic,abyss*.91);ALBEDO=col;ROUGHNESS=mix(.95,.54,wet);
-}
+uniform float tide_level=3.4;varying vec3 wp;varying vec3 wn;
+float h(vec2 u){return fract(sin(dot(u,vec2(57.25,113.9)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
+float grain(vec2 p){return n(p*.62)*.6+n(p*3.2)*.26+n(p*18.)*.14;}
+void vertex(){wp=(MODEL_MATRIX*vec4(VERTEX,1.)).xyz;wn=normalize(MODEL_NORMAL_MATRIX*NORMAL);}
+void fragment(){vec3 w=pow(abs(wn),vec3(3.));w/=max(.001,w.x+w.y+w.z);
+ float sand=grain(wp.zy)*w.x+grain(wp.xz)*w.y+grain(wp.xy)*w.z;
+ float ripple=sin(wp.z*8.4+wp.x*3.+sand*5.+2.*n(wp.xz*.19));
+ float wet=1.-smoothstep(tide_level-.26,tide_level+.77,wp.y);
+ vec3 c=mix(vec3(.66,.42,.21),vec3(.99,.78,.45),sand+.12);
+ c=mix(c,c*vec3(.57,.72,.79),wet*.66);c+=ripple*.026*(1.-wet*.5);
+ float tile=min(abs(fract(wp.x*.5)-.5),abs(fract(wp.z*.5)-.5));vec3 ceramic=mix(vec3(.19,.32,.34),vec3(.44,.60,.54)+sand*.03,smoothstep(.011,.035,tile));
+ c=mix(c,ceramic,1.-smoothstep(-7.,-4.3,wp.y));float ring=100.;
+ for(int i=0;i<6;i++){float y=3.4-float(i)*2.36;ring=min(ring,abs(wp.y-y+.044*sin(wp.x)));}c=mix(c,vec3(.79,.73,.56),(1.-smoothstep(.022,.09,ring))*.42);
+ ALBEDO=c;ROUGHNESS=mix(.91,.41,wet);NORMAL=normalize(NORMAL+vec3(.026*ripple,.013*(sand-.5),0.));}

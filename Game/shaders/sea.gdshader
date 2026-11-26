@@ -1,45 +1,28 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled, fog_disabled;
-uniform sampler2D relief : filter_linear, repeat_disable;
-uniform vec4 shallows : source_color = vec4(0.25,0.72,0.66,1.0);
-uniform vec4 deep : source_color = vec4(0.10,0.39,0.43,1.0);
-uniform float sea_level=3.4;
-uniform float clock=0.0;
-uniform float quality=1.0;
-uniform float whirl=0.0;
-uniform vec2 splash_pos=vec2(500.0);
-uniform float splash_at=-10.0;
-varying vec2 shore_point;
-varying float tide_wave;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float brush(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
-void vertex(){
- vec3 p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
- shore_point=p.xz;
- tide_wave=.045*sin(p.x*.52+clock*1.18)+.034*sin(p.z*.72+.4*p.x-clock*1.45)+.019*sin(p.z*1.28+clock);
- VERTEX.y+=tide_wave-whirl*1.8*exp(-length(p.xz)*.15);
-}
+render_mode unshaded,cull_disabled,fog_disabled;
+uniform sampler2D relief:filter_linear,repeat_disable;
+uniform vec4 shallows:source_color=vec4(.32,.75,.68,1.);
+uniform vec4 deep:source_color=vec4(.10,.34,.49,1.);
+uniform float sea_level=3.4;uniform float clock=0.;uniform float quality=1.;uniform float whirl=0.;
+uniform vec2 splash_pos=vec2(500.);uniform float splash_at=-10.;
+varying vec2 p;varying float wave;varying vec3 wpos;
+float hash(vec2 x){return fract(sin(dot(x,vec2(127.1,311.7)))*43758.5453);}
+float swell(vec2 x){return .11*sin(x.x*.42+x.y*.35+clock*.92)+.062*sin(x.y*.79-x.x*.31-clock*1.14);}
+float foam(vec2 x){vec2 c=floor(x),f=fract(x);float m=2.,s=3.;for(int j=-1;j<=1;j++){for(int i=-1;i<=1;i++){vec2 b=vec2(float(i),float(j));vec2 v=b+.23+.52*vec2(hash(c+b),hash(c+b+.34))-f;float d=dot(v,v);if(d<m){s=m;m=d;}else{s=min(s,d);}}}return sqrt(s)-sqrt(m);}
+void vertex(){wpos=(MODEL_MATRIX*vec4(VERTEX,1.)).xyz;p=wpos.xz;wave=swell(p);VERTEX.y+=wave-whirl*1.65*exp(-length(p)*.19);wpos.y+=wave;}
 void fragment(){
- vec2 p=shore_point;
- float floor_y=texture(relief,clamp(p/208.+.5,0.,1.)).r*32.-15.;
- float depth=sea_level+tide_wave-floor_y;
- float pigment=brush(p*vec2(.25,1.1)+vec2(.04*clock,-.12*clock));
- float ripple=sin(p.y*1.9+.3*p.x+pigment*4.8+clock);
- float depth_mix=smoothstep(.0,8.7,max(0.,depth)+.36*pigment);
- vec3 tint=mix(shallows.rgb,deep.rgb,depth_mix);
- tint+=(pigment-.50)*vec3(.055,.095,.085);
- float ink=brush(p*vec2(.22,.93)+vec2(.07,-.15)*clock);
- float wave=smoothstep(.35,.8,ink)*(1.-smoothstep(.12,.36,abs(ripple-.4)));
- tint=mix(tint,vec3(.49,.82,.74),wave*.35);
- float foamline=abs(depth-(.15+.075*ink+.055*sin(clock*1.4+p.y)));
- float lace=(1.-smoothstep(.028,.095,foamline))*.88;
- lace+=.46*(1.-smoothstep(.032,.10,abs(depth-.43-ink*.24)))*smoothstep(.27,.75,ink);
- float dt=clock-splash_at;
- float pulse=(1.-smoothstep(.044,.13,abs(length(p-splash_pos)-dt*2.2)))*(1.-smoothstep(.0,1.6,dt))*step(0.,dt);
- vec2 viewray=normalize(p-CAMERA_POSITION_WORLD.xz+vec2(.0001));
- float glint_path=pow(max(0.,dot(viewray,normalize(vec2(-.46,-.82)))),23.);
- float sparkle=smoothstep(.60,.89,ink)*smoothstep(.3,.95,ripple)*glint_path;
- tint=mix(tint,vec3(.95,.80,.50),sparkle*.62);
- float spiral=(1.-smoothstep(.07,.30,abs(sin(length(p)*.75+atan(p.y,p.x)*4.-clock*2.))))*whirl;
- ALBEDO=mix(tint,vec3(.88,.91,.76),clamp(lace+pulse+spiral*.73,.0,1.));
+ float land=texture(relief,clamp(p/208.+.5,0.,1.)).r*32.-15.;float d=sea_level+wave-land;
+ vec2 q=p*vec2(.39,.50)+vec2(clock*.07,clock*-.10);vec2 g=floor(q),f=fract(q);float tri=hash(g+step(1.-f.y,f.x)*.49);
+ vec3 n=normalize(vec3(-.07*cos(p.x*.42+p.y*.35+clock)-.032*cos(p.y*.79-p.x*.31-clock),1.,-.08*cos(p.y*.79-p.x*.31-clock)));
+ vec3 view=normalize(CAMERA_POSITION_WORLD-wpos);vec3 sun=normalize(vec3(-.48,.147,-.865));
+ vec3 col=mix(shallows.rgb,deep.rgb,smoothstep(.0,7.,d));col=mix(vec3(.70,.82,.66),col,smoothstep(-.07,.83,d));
+ col+=(tri-.5)*vec3(.085,.13,.15);float ridge=.5+.5*sin(q.y*2.4+q.x*1.2+sin(q.x*.7)*1.7);
+ float stripes=pow(max(0.,dot(reflect(-sun,n),view)),26.)*smoothstep(.14,.89,ridge);
+ col=mix(col,vec3(.98,.80,.53),stripes*.80);
+ float noise=sin(p.x*1.7+p.y*.92+clock)*.06+sin(p.y*.81-clock)*.09;
+ float edge=abs(d-.20-noise);float front=1.-smoothstep(.046,.13,edge);
+ float lace=0.;if(quality>.2 && d<2.8){float cell=foam(p*1.32+vec2(clock*.24,-clock*.18));lace=(1.-smoothstep(.015,.080,cell))*smoothstep(-.05,.24,d)*(1.-smoothstep(.18,1.1,d));col+=vec3(.075,.095,.064)*(1.-smoothstep(.012,.066,cell))*exp(-max(d,0.)*.79);}
+ float t=clock-splash_at;float ripple=(1.-smoothstep(.035,.11,abs(length(p-splash_pos)-t*2.2)))*(1.-smoothstep(.0,1.6,t))*step(0.,t);
+ float spiral=(1.-smoothstep(.08,.35,abs(sin(length(p)*.73+atan(p.y,p.x)*4.-clock*2.))))*whirl;
+ ALBEDO=mix(col,vec3(.94,.92,.78),clamp(front*.89+lace*.71+ripple+spiral*.75,0.,1.));
 }

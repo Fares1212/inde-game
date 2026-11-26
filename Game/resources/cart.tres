@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/cart.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "cart"
+title = "Tonneau sur diable"
+capacity = 38000
+scoop = 7600
+stroke_seconds = 0.98
+spill_rate = 0.014
+slowdown = 0.25
+price = 900
+gate = 0.8
+delivery = 18
+leverage = 49
+auto_rate = 4500
+verb = "Remplir le tonneau"
+description = "Un fût ouvert sur deux roues. Bascule-le contre la goulotte pour le vider."
+model = ExtResource("2")

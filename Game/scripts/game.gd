@@ -42,6 +42,13 @@ var multiplier:=1.0
 var action_target:Dictionary={}
 var playing:=false
 var finale_card:=false
+var shop_tab:="vessels"
+var book_tab:="items"
+var diagnostic:=false
+var rates:Label
+var story_choice:=""
+var last_coins:=-1
+var notified_tier:=-1
 
 func _ready()->void:
 	if Voyage.p.is_empty() and not Voyage.continue_run():Voyage.new_run()
@@ -53,7 +60,7 @@ func _ready()->void:
 	Voyage.save_failed.connect(func(msg):notify_text(msg,7.0))
 	playing=true
 	Sound.music(false)
-	if Voyage.p.finished:
+	if Voyage.p.finished and not Voyage.p.free:
 		finish_panel()
 	elif not Voyage.p.intro_done:
 		intro_panel()
@@ -71,23 +78,24 @@ func make_hud()->void:
 	glare_mat=ShaderMaterial.new();glare_mat.shader=preload("res://shaders/sun.gdshader");glare.material=glare_mat
 	flash=ColorRect.new();root.add_child(flash);UI.wide(flash);flash.color=Color(1,.88,.59,0);flash.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	hud=Control.new();root.add_child(hud);UI.wide(hud);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var c=UI.card(hud,Color(.05,.17,.19,.93));c.position=Vector2(22,20)
+	var c=UI.card(hud);c.position=Vector2(22,20)
 	var vb=UI.vbox(c,2);zone_label=UI.text(vb,"Lagon",24,UI.IVORY,true,true)
-	water_label=UI.text(vb,"",16,UI.PALE);region_meter=UI.meter(vb,198)
-	tide_label=UI.text(vb,"",14,UI.GOLD)
+	water_label=UI.text(vb,"",19,UI.PALE);region_meter=UI.meter(vb,198)
+	tide_label=UI.text(vb,"",17,UI.GOLD)
 	var side=UI.card(hud,Color(.05,.17,.19,.92));side.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	UI.pad(side,-221,20,-22,106);var sv=UI.vbox(side,0)
-	wallet=UI.text(sv,"",21,UI.GOLD,false,true);UI.text(sv,"J  ·  Carnet   |   Échap  ·  Pause",13,UI.PALE)
+	UI.pad(side,-247,20,-22,106);var sv=UI.vbox(side,0)
+	wallet=UI.text(sv,"",21,UI.GOLD,false,true);UI.text(sv,"Carnet  J    ·    Pause  Échap",17,UI.PALE)
 	compass=UI.text(hud,"",15,UI.IVORY,false,true);compass.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);UI.pad(compass,-234,23,234,49);compass.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	for l in [compass]:
 		l.add_theme_constant_override("outline_size",5);l.add_theme_color_override("font_outline_color",Color("#25464e"))
-	var cross=UI.text(hud,"·",29,UI.IVORY,false,true);cross.set_anchors_and_offsets_preset(Control.PRESET_CENTER);UI.pad(cross,-11,-20,11,20);cross.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	var cross=UI.text(hud,"·",25,UI.IVORY,false,true);cross.set_anchors_and_offsets_preset(Control.PRESET_CENTER);UI.pad(cross,-11,-20,11,20);cross.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	rates=UI.text(hud,"",18,UI.IVORY);rates.position=Vector2(30,162);rates.add_theme_constant_override("outline_size",4);rates.add_theme_color_override("font_outline_color",UI.PAPER);rates.hide()
 	var bottom=UI.card(hud,Color(.05,.17,.19,.94));bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT);UI.pad(bottom,22,-113,296,-21)
-	var bv=UI.vbox(bottom,1);tool_name=UI.text(bv,"",21,UI.IVORY,true,true);load_label=UI.text(bv,"",15,UI.PALE);bag_meter=UI.meter(bv,222)
+	var bv=UI.vbox(bottom,1);tool_name=UI.text(bv,"",21,UI.IVORY,true,true);load_label=UI.text(bv,"",19,UI.PALE);bag_meter=UI.meter(bv,222)
 	target=UI.text(hud,"",19,UI.IVORY,false,true);target.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	UI.pad(target,-345,-129,345,-92);target.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	help=UI.text(hud,"",15,UI.IVORY);help.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);UI.pad(help,-338,-67,338,-21);help.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	for l in [target,help]:l.add_theme_constant_override("outline_size",6);l.add_theme_color_override("font_outline_color",Color("#193c43"))
+	for l in [compass,target,help,cross]:l.add_theme_color_override("font_color",UI.IVORY);l.add_theme_constant_override("outline_size",6);l.add_theme_color_override("font_outline_color",Color("#193c43"))
 	message_panel=UI.card(hud,Color(.09,.22,.23,.94),UI.GOLD);message_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);UI.pad(message_panel,-279,66,279,117)
 	message=UI.text(message_panel,"",16,UI.IVORY);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;message_panel.hide()
 	subtitle=UI.text(hud,"",17,UI.IVORY);subtitle.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);UI.pad(subtitle,-360,-195,360,-138);subtitle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;subtitle.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -97,10 +105,7 @@ func notify_text(s:String,seconds:=3.1)->void:
 	message.text=s;message_panel.show();toast_left=seconds
 
 func say(k:String)->void:
-	Sound.voice(k)
-	if Voyage.opt.subtitles:
-		subtitle.text="Bernard  ·  « "+str(Voyage.db.voices[k])+" »"
-		caption_left=clampf(float(subtitle.text.length())/16.0,3.4,8.2)
+	DialogueManager.say(str(Voyage.db.voices[k]),2 if k in ["empty","plug"] else 0)
 
 func panel(kind:String,title:String,small:String,w:=620,h:=555)->Dictionary:
 	if is_instance_valid(modal):modal.hide();modal.queue_free()
@@ -108,6 +113,7 @@ func panel(kind:String,title:String,small:String,w:=620,h:=555)->Dictionary:
 	var m=UI.modal(root,title,small,w,h);modal=m.root;return m
 
 func close_panel()->void:
+	DialogueManager.clear()
 	if is_instance_valid(modal):modal.hide();modal.queue_free()
 	modal=null;screen=""
 	canvas.visible=true
@@ -118,7 +124,7 @@ func intro_panel()->void:
 	var m=panel("intro","Un tout petit service","Au comptoir de Bernard",615,370)
 	UI.copy(m.body,"« "+str(Voyage.db.voices.intro)+" »",21,UI.IVORY)
 	UI.copy(m.body,"ZQSD / WASD ou flèches pour marcher. Souris pour regarder. Clic gauche au bord de l’eau, puis E au déversoir. Maj pour courir et Espace pour sauter.",16)
-	UI.button(m.footer,"Prendre la cuillère",accept_intro,true).grab_focus();Sound.voice("intro")
+	UI.button(m.footer,"Prendre la cuillère",accept_intro,true).grab_focus();say("intro")
 
 func accept_intro()->void:
 	Voyage.p.intro_done=true;Voyage.save_now();close_panel()
@@ -126,9 +132,11 @@ func accept_intro()->void:
 
 func pause_panel()->void:
 	if screen=="":player.record();Voyage.save_now()
-	var m=panel("pause","Marée en pause","Journal de bord",494,480)
-	UI.copy(m.body,"Bassin "+str(int(Voyage.p.basin)+1)+"  ·  "+str(Voyage.db.zones[Voyage.region()].title)+"  ·  "+Voyage.percent(Voyage.p.drained/Voyage.total())+" vidé.",17)
+	DialogueManager.clear()
+	var m=panel("pause","Marée en pause","Journal de bord",540,540)
+	UI.copy(m.body,"La crique   ·   "+str(Voyage.db.zones[Voyage.region()].title)+"  ·  "+Voyage.percent(Voyage.p.drained/Voyage.total())+" vidé.",17)
 	UI.button(m.body,"Reprendre",close_panel,true).grab_focus()
+	if Voyage.p.free:UI.button(m.body,"Revenir avant le dernier choix",rewind_choice)
 	UI.button(m.body,"Réglages",options_panel);UI.button(m.body,"Carnet des trouvailles",book_panel);UI.button(m.body,"Commandes",controls_panel);UI.button(m.body,"Album photo",album_panel);UI.button(m.body,"Sauvegarder et revenir au port",return_menu)
 
 func album_panel()->void:
@@ -138,7 +146,7 @@ func album_panel()->void:
 
 func controls_panel()->void:
 	var m=panel("controls","Commandes","SPOONFUL",584,515)
-	for row in ["ZQSD, WASD ou flèches     Marcher","Souris     Regarder","Clic gauche     Puiser ou actionner l’outil","E     Vendre, verser, ramasser ou tirer la Bonde","Maj / Espace     Courir / sauter","J     Carnet des 18 trouvailles","F2     Mode photo libre du HUD","F12     Enregistrer une photo PNG","F1     Menu de développement","Échap     Pause ou retour"]:
+	for row in ["ZQSD, WASD ou flèches     Marcher","Souris     Regarder","Clic gauche     Puiser ou actionner l’outil","E     Vendre, verser, ramasser ou tirer la Bonde","Maj / Espace     Courir / sauter","J     Carnet des 18 trouvailles","F2     Mode photo libre du HUD","F12     Enregistrer une photo PNG","F3     Débits et marée","Tab / clic stick droit     Avancer le dialogue","Manette     Sticks : marche / regard, X : interagir, RB : puiser","Échap     Pause ou retour"]:
 		UI.text(m.body,row,16,UI.IVORY)
 	UI.button(m.footer,"Retour",pause_panel,true).grab_focus()
 
@@ -152,52 +160,114 @@ func return_menu()->void:
 	Voyage.run_active=false;playing=false;get_tree().change_scene_to_file("res://scenes/Menu.tscn")
 
 func book_panel()->void:
-	var m=panel("book","Carnet des trouvailles",str(Voyage.p.seen.size())+" / 18 découvertes",740,620)
-	for r in 6:
-		UI.text(m.body,str(Voyage.db.zones[r].title),22,UI.GOLD,true,true)
-		for j in 3:
-			var k=r*3+j;var found=Voyage.p.seen.has(str(k));var entry=Voyage.db.finds[k]
-			UI.text(m.body,entry.title if found else "— Objet encore immergé —",16,UI.IVORY if found else UI.PALE,false,found)
-			if found:UI.copy(m.body,entry.lore,14)
+	var m=panel("book","Carnet de la grève",str(Voyage.p.seen.size())+" / 18 pages",755,596)
+	var opening:=UI.hbox(m.body,18)
+	var plate:=TextureRect.new()
+	plate.texture=load("res://art/carnet-bernard.jpg")
+	plate.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	plate.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	plate.custom_minimum_size=Vector2(208,130)
+	opening.add_child(plate)
+	var inscription:=UI.vbox(opening,4)
+	inscription.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	UI.text(inscription,"Sur la grève",27,UI.GOLD,true)
+	UI.copy(inscription,"« Ce qui revient dans les filets, on le vend. Ce qui revient dans la mémoire, on le dessine. »",19)
+	UI.text(inscription,"Bernard, marchand de marée",16)
+	var nav=UI.hbox(m.body,8)
+	UI.button(nav,"Objets",func():book_tab="items";book_panel(),book_tab=="items")
+	UI.button(nav,"Récipients",func():book_tab="vessels";book_panel(),book_tab=="vessels")
+	if book_tab=="vessels":
+		for i in Voyage.RULES.vessels.size():
+			var v:VesselData=Voyage.RULES.vessels[i]
+			UI.text(m.body,("✓  " if i<=Voyage.p.tier else "○  ")+v.title,21,UI.GOLD,true)
+			UI.copy(m.body,Voyage.volume(v.capacity)+"   ·   "+v.description,18)
+	else:
+		for r in 6:
+			UI.text(m.body,Voyage.db.zones[r].title,23,UI.GOLD,true)
+			for j in 3:
+				var item:ItemData=Voyage.db.finds[r*3+j]
+				var seen:bool=Voyage.p.seen.has(item.id)
+				var row=UI.hbox(m.body,8)
+				var icon:=TextureRect.new();icon.texture=load("res://art/ui/item_%02d.svg"%item.journal_id);icon.custom_minimum_size=Vector2(40,40);icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+				if not seen:icon.modulate=Color("#363c3b")
+				row.add_child(icon);UI.text(row,item.title+"  ·  "+item.rarity if seen else "Encore sous la marée",18)
+				if seen:UI.copy(m.body,item.lore,18)
 	UI.button(m.footer,"Fermer le carnet",close_panel,true).grab_focus()
 
 func shop_panel(greeting:=true)->void:
-	var m=panel("shop","Le comptoir de Bernard","Coquilles en poche  ·  "+str(int(Voyage.p.coins)),650,540)
-	UI.copy(m.body,"Le crabe ajuste l’anse de sa tasse. Sur une ardoise, il a écrit le prix du prochain outil.",16)
-	var val=Voyage.cargo_value()
-	var sell_button=UI.button(m.body,"Vendre les trouvailles  ·  "+str(val)+" coquilles",func():
-		var got=Voyage.sell()
-		if got>0:Sound.effect("coin");say("sale");shop_panel(false)
-	)
-	sell_button.disabled=val<=0
-	if int(Voyage.p.tier)<5:
-		var next=Voyage.db.tools[int(Voyage.p.tier)+1]
-		UI.text(m.body,next.title,28,UI.IVORY,true,true);UI.copy(m.body,next.description)
-		UI.text(m.body,"Capacité  "+Voyage.number(float(next.capacity)*Voyage.power_bonus())+"   ·   Prix  "+str(int(next.price))+" coquilles",16,UI.GOLD)
-		var status=Voyage.upgrade_status()
-		if status!="":UI.copy(m.body,status,16)
-		var purchase=UI.button(m.body,"Acheter cet outil",func():
-			if Voyage.buy():
-				player.rebuild();world.refresh();Sound.effect("buy");say("buy");flash.color.a=.16;shop_panel(false)
-		,true);purchase.disabled=status!=""
-	else:UI.copy(m.body,"L’éponge géante est à toi. La chaîne te guidera vers la Bonde.")
+	var m=panel("shop","Chez Bernard",Voyage.number(Voyage.p.coins)+" coquilles",680,505)
+	# Keep the dialogue ribbon below the shop instead of obscuring its buttons.
+	var sheet:Control=m.root.get_child(0);sheet.offset_top-=60;sheet.offset_bottom-=60
+	var tabs=UI.hbox(m.body,9)
+	UI.button(tabs,"Récipients",func():shop_tab="vessels";shop_panel(false),shop_tab=="vessels")
+	UI.button(tabs,"Objets et digues",func():shop_tab="objects";shop_panel(false),shop_tab=="objects")
+	if shop_tab=="vessels":
+		if not Voyage.p.primer:
+			UI.text(m.body,"Le petit siphon",25,UI.GOLD,true)
+			UI.copy(m.body,"Après cinq livraisons, Bernard raccorde ta goulotte au siphon de la crique. Chaque récipient versé entraîne alors l’eau au large.")
+			var prime=UI.button(m.body,"Amorcer le siphon  ·  8 coquilles",func():
+				if Voyage.buy_primer():say("buy");Sound.effect("buy");shop_panel(false))
+			prime.disabled=Voyage.p.coins<Voyage.RULES.primer_price or Voyage.p.drops<5
+		if Voyage.p.tier<5:
+			var v:VesselData=Voyage.db.tools[int(Voyage.p.tier)+1]
+			UI.text(m.body,v.title,26,UI.GOLD,true);UI.copy(m.body,v.description)
+			UI.text(m.body,Voyage.volume(v.capacity)+"   ·   "+Voyage.number(v.price)+" coquilles",21)
+			var status:=Voyage.upgrade_status()
+			if status!="":UI.copy(m.body,status,17)
+			var buy=UI.button(m.body,"Acheter cet outil",func():
+				if Voyage.buy():player.rebuild();world.refresh();Sound.effect("buy");say("buy");shop_panel(false)
+			,true);buy.disabled=status!=""
+		else:UI.copy(m.body,"La dernière goulotte mène au vieux treuil. Tu as de quoi aller jusqu’au bout.")
+	else:
+		var val:=Voyage.cargo_value()
+		for item:ItemData in Voyage.RULES.items:
+			if Voyage.p.cargo.has(item.id):UI.text(m.body,item.title+"   × "+str(Voyage.p.cargo[item.id]),18)
+		var sell=UI.button(m.body,"Vendre les trouvailles  ·  "+str(val)+" coquilles",func():
+			if Voyage.sell()>0:Sound.effect("coin");say("sale");shop_panel(false)
+		,true);sell.disabled=val<=0
+		if Voyage.p.seen.has("find_16") and not Voyage.p.returned:
+			UI.button(m.body,"Rendre la clé du logis",func():Voyage.return_key();say("home");shop_panel(false))
+		var chart:Dictionary=chart_target(true)
+		if not chart.is_empty() and int(Voyage.p.marked_find)<0:
+			var cost:int=12+8*Voyage.region()
+			var order:=UI.button(m.body,"Acheter un repère de pêche  ·  "+str(cost)+" coquilles",func():
+				if int(Voyage.p.marked_find)<0 and Voyage.p.coins>=cost:
+					Voyage.p.coins-=cost;Voyage.p.marked_find=int(chart.id);Voyage.save_now()
+					close_panel();notify_text("Bernard a marqué une trouvaille inconnue sur ta boussole.",4.))
+			order.disabled=Voyage.p.coins<cost
+		var price:int=Voyage.RULES.dike_price*(1+int(Voyage.p.dikes))
+		UI.copy(m.body,"Une digue protège la mer déjà retirée quand la marée remonte.")
+		var d=UI.button(m.body,"Poser une digue  ·  "+str(price)+" coquilles",func():
+			if Voyage.buy_dike():Sound.effect("creak");shop_panel(false))
+		d.disabled=Voyage.p.coins<price or Voyage.p.drained<=Voyage.p.locked+.001
 	UI.button(m.footer,"Retour à la plage",close_panel).grab_focus()
 	if greeting:say("shop")
 
 func debug_panel()->void:
-	var m=panel("debug","Outils de développement","F1 · Test du bassin",525,520)
+	var m=panel("debug","Outils de développement","F1 · Réglages de la crique",525,520)
 	UI.button(m.body,"Ajouter 100 coquilles",func():Voyage.p.coins+=100;Voyage.save_now();debug_panel())
 	UI.button(m.body,"Débloquer l’outil suivant",func():
 		if Voyage.p.tier<5:Voyage.p.tier+=1;Voyage.save_now();player.rebuild();world.refresh()
 		debug_panel())
 	UI.button(m.body,"Découvrir la zone suivante",func():
 		var r=Voyage.region();Voyage.p.drained=Voyage.total()*(float(Voyage.db.zones[r+1].units)/float(Voyage.db.basin_units)) if r<5 else Voyage.total()
-		Voyage.save_now();world.refresh();close_panel())
+		Voyage.p.peak=maxf(Voyage.p.peak,Voyage.p.drained);Voyage.save_now();world.refresh();close_panel())
 	UI.button(m.body,"Rejoindre Bernard",func():player.go(Coast.SHOP.x,Coast.SHOP.y+2);close_panel())
 	UI.button(m.body,"Rejoindre la chaîne",func():player.go(0,2.3);close_panel())
 	UI.button(m.body,"Temps ×"+("1" if multiplier>1 else "10"),func():multiplier=1.0 if multiplier>1 else 10.0;debug_panel())
 	UI.button(m.body,"Prendre une photo",func():close_panel();take_photo())
 	UI.button(m.footer,"Revenir au jeu",close_panel,true).grab_focus()
+
+func chart_target(new_order:=false)->Dictionary:
+	var nearest:Dictionary={}
+	var distance:=INF
+	for entry in world.finds:
+		if not new_order:
+			if entry.id==Voyage.p.marked_find:return entry
+		elif entry.node.visible and not Voyage.p.seen.has(Voyage.db.finds[entry.kind].id):
+			var length:float=player.position.distance_squared_to(entry.p)
+			if length<distance:distance=length;nearest=entry
+	return nearest
 
 func first_port()->Vector3:
 	var n=Voyage.region()
@@ -221,7 +291,7 @@ func focus()->Dictionary:
 		if dst<=2.75 and dst<best.dist and (delta.normalized().dot(facing)>.13 or dst<1.25):
 			best={"key":"find","dist":dst,"entry":entry,"label":"E  ·  Ramasser "+str(Voyage.db.finds[entry.kind].title)}
 	if Voyage.plug_ready() and q.length()<=4.2:return {"key":"plug","label":"E  ·  Soulever la Bonde"}
-	var ds=q.distance_to(Coast.SHOP)
+	var ds=q.distance_to(Coast.SHOP) if world.crab.visible else INF
 	if ds<3.1 and (best.key=="" or ds<best.dist):return {"key":"shop","label":"E  ·  Parler à Bernard"}
 	var port=first_port();var pd=q.distance_to(Vector2(port.x,port.z))
 	if pd<2.85 and (Voyage.p.bag>0 or best.key==""):
@@ -247,7 +317,7 @@ func do_scoop()->void:
 		notify_text("Récipient plein. Dépose l’eau au déversoir indiqué.",2.1);return
 	if Voyage.scoop()>0:
 		player.animate_action();world.splash(water);Sound.effect("scoop")
-		throttle=.22 if int(Voyage.p.tier)>=3 else .32
+		throttle=Voyage.vessel().stroke_seconds
 		if Voyage.p.scoops==1:notify_text("Première cuillère pleine. Rejoins le déversoir.",3.6)
 	elif Voyage.plug_ready():notify_text("La mer est vide. Suis la chaîne jusqu’à la Bonde.")
 
@@ -257,22 +327,24 @@ func interact()->void:
 	match dst.key:
 		"shop":shop_panel()
 		"pour":
+			var carried:float=Voyage.p.bag
 			var quantity=Voyage.pour()
 			if quantity>0:
-				player.animate_action(1.1);world.splash(dst.pos,true);Sound.effect("pour");throttle=.30
+				player.animate_action(1.1);world.pour_arc(player.liquid.global_position, dst.pos+Vector3.UP*.23);Sound.effect("pour");throttle=.30
 				if Voyage.p.drops==1:
-					say("first");notify_text("Plic !   −"+Voyage.percent(quantity/Voyage.total()),5.0)
+					say("first");notify_text("Plic !   Une cuillère sur cent millions.",5.0)
 					postcard("Premier-plic")
-				else:notify_text("Livraison   −"+Voyage.number(quantity)+" unités d’eau",2)
+				else:notify_text(Voyage.volume(carried)+" versés   ·   "+Voyage.volume(quantity)+" évacués",2.2)
 			else:notify_text("Va remplir ton outil au bord de l’eau.",2.1)
 		"find":
 			var e=dst.entry
-			var fresh=not Voyage.p.seen.has(str(e.kind))
+			var fresh=not Voyage.p.seen.has(Voyage.db.finds[e.kind].id)
 			if Voyage.collect(e.id,e.kind):
 				e.node.visible=false;Sound.effect("coin");player.animate_action(.35)
 				notify_text(("Carnet mis à jour  ·  " if fresh else "Dans la besace  ·  ")+str(Voyage.db.finds[e.kind].title));throttle=.20
 		"plug":
-			if Voyage.open_plug():start_finale()
+			if Voyage.p.finished:finish_panel()
+			else:choice_panel()
 		_:do_scoop_at_context()
 
 func do_scoop_at_context()->void:
@@ -288,57 +360,110 @@ func update_hud()->void:
 	if not is_instance_valid(hud):return
 	var reg=Voyage.region()
 	var row=Voyage.db.zones[reg]
-	zone_label.text=str(row.title)+"  ·  "+str(int(Voyage.p.basin)+1)
-	water_label.text="Mer retirée   "+Voyage.percent(Voyage.p.drained/Voyage.total())
-	var lower=float(row.units)
-	var upper=float(Voyage.db.zones[reg+1].units) if reg<5 else float(Voyage.db.basin_units)
-	region_meter.value=clampf((Voyage.volume_base()-lower)/(upper-lower),0,1)
-	var t=Voyage.tide()
-	tide_label.text="Basse mer" if t<-.75 else ("Pleine mer" if t>.75 else ("Marée montante" if cos(Voyage.tide_phase())>0 else "Marée descendante"))
-	wallet.text=str(int(Voyage.p.coins))+"  coquilles"
-	tool_name.text=Voyage.db.tools[int(Voyage.p.tier)].title
-	load_label.text="Cargaison  "+Voyage.number(Voyage.p.bag)+" / "+Voyage.number(Voyage.capacity())
-	bag_meter.value=Voyage.p.bag/Voyage.capacity()
+	zone_label.text=str(row.title)
+	var frac:float=Voyage.p.drained/Voyage.total()
+	water_label.text="Mer retirée   "+Voyage.percent(frac)
+	if Voyage.p.free and Voyage.p.ending!="empty":
+		frac=clampf((3.62-world.water.position.y)/(3.62-Voyage.db.last_water),0.,1.)
+		water_label.text="Marée libre   "+Voyage.percent(1.-frac)
+		frac=1.-frac
+	region_meter.step=0.;region_meter.value=frac
+	var t:=Voyage.tide()
+	tide_label.text="↓  Basse mer" if t<-.75 else ("↑  Pleine mer" if t>.75 else ("↗  Marée montante" if cos(Voyage.tide_phase())>0 else "↘  Marée descendante"))
+	wallet.text=Voyage.number(Voyage.p.coins)+" coquilles"
+	if last_coins!=int(Voyage.p.coins):
+		last_coins=int(Voyage.p.coins);wallet.scale=Vector2.ONE*1.07;wallet.create_tween().tween_property(wallet,"scale",Vector2.ONE,.25)
+	tool_name.text=Voyage.vessel().title
+	load_label.text=Voyage.volume(Voyage.p.bag)+"  /  "+Voyage.volume(Voyage.capacity())
+	bag_meter.step=0.;bag_meter.value=player.fill_view
+	rates.visible=diagnostic
+	if diagnostic:rates.text="Siphon × %.0f   ·   Automatique %s/s   ·   Reflux %s/s   ·   Digue %s"%[Voyage.RULES.primer_leverage if Voyage.p.primer and Voyage.p.tier==0 else Voyage.vessel().leverage,Voyage.volume(Voyage.vessel().auto_rate*(1.-Voyage.tide()*.3)),Voyage.volume(maxf(0.,cos(Voyage.tide_phase()))*Voyage.p.drained*Voyage.RULES.return_fraction_per_second),Voyage.percent(Voyage.p.locked/Voyage.total())]
 	action_target=focus()
 	target.text=action_target.get("label","")
-	if target.text=="" and sample_water().x<900 and Voyage.p.bag<Voyage.capacity():target.text=("Maintenir le clic  ·  " if Voyage.p.tier>=3 else "Clic  ·  ")+str(Voyage.db.tools[int(Voyage.p.tier)].verb)
-	if Voyage.plug_ready():compass.text="BONDE  ·  "+heading_to(Vector3.ZERO);help.text="Rejoins le pied de la chaîne pour ouvrir la Bonde."
+	if not Voyage.p.finished and target.text=="" and sample_water().x<900 and Voyage.p.bag<Voyage.capacity():target.text=("Maintenir le clic  ·  " if Voyage.p.tier>=3 else "Clic  ·  ")+str(Voyage.db.tools[int(Voyage.p.tier)].verb)
+	if action_target.key!="":
+		var pos:Vector3=first_port() if action_target.key=="pour" else (world.crab.global_position+Vector3.UP if action_target.key=="shop" else (action_target.entry.p+Vector3.UP*.65 if action_target.key=="find" else world.plug.global_position+Vector3.UP))
+		if not player.cam.is_position_behind(pos):
+			var dims:=get_viewport().get_visible_rect().size
+			var pt:Vector2=player.cam.unproject_position(pos)
+			target.global_position=Vector2(clampf(pt.x-target.size.x*.5,0,maxf(0,dims.x-target.size.x)),clampf(pt.y+8,110,dims.y-175))
+	else:
+		var dims:=get_viewport().get_visible_rect().size;target.global_position=Vector2((dims.x-target.size.x)*.5,dims.y*.62)
+	if Voyage.p.free:compass.text="";help.text="Promenade libre   ·   Échap pour retrouver le dernier choix"
+	elif Voyage.plug_ready():compass.text="BONDE  ·  "+heading_to(Vector3.ZERO);help.text="Rejoins le pied de la chaîne pour ouvrir la Bonde."
 	elif Voyage.p.bag>0:compass.text="DÉVERSOIR  ·  "+heading_to(first_port());help.text="Verse ta cargaison avec E au déversoir."
-	elif (int(Voyage.p.tier)<5 and Voyage.upgrade_status()=="") or Voyage.cargo_value()>=8:
+	elif (not Voyage.p.primer and Voyage.p.drops>=5 and Voyage.p.coins>=8) or (int(Voyage.p.tier)<5 and Voyage.upgrade_status()=="") or Voyage.cargo_value()>=8:
 		compass.text="BERNARD  ·  "+heading_to(S.place(Coast.SHOP.x,Coast.SHOP.y));help.text="Rends visite au crabe pour vendre ou changer d’outil."
 	else:
-		compass.text="";help.text="Marche vers l’eau. Explore la rive à marée basse." if Voyage.p.drops<3 else "E  ·  Interagir     J  ·  Carnet     F2  ·  Photo"
+		compass.text="";help.text="Marche vers l’eau. Explore la rive à marée basse." if Voyage.p.drops<3 else ""
 
-func start_finale()->void:
-	close_panel();photo=false;hud.hide();glare.hide();player.hand.hide()
-	finale=0;world.start_finale();Sound.effect("plug");Sound.voice("plug")
-	end_cam=Camera3D.new();add_child(end_cam);end_cam.current=true;end_cam.fov=69
+	if int(Voyage.p.marked_find)>=0 and Voyage.p.bag<=0 and screen=="":
+		var mark:=chart_target()
+		if not mark.is_empty():
+			compass.text="REPÈRE DE BERNARD  ·  "+heading_to(mark.p)
+			help.text="Cherche la trouvaille au pied du repère." if mark.node.visible else "Ce repère est sous l’eau. Reviens à marée basse."
+
+func choice_panel()->void:
+	if not Voyage.plug_ready():return
+	var m=panel("choice","La dernière cuillère","Au pied du treuil",640,460)
+	UI.copy(m.body,"Le courant s’est tu. Il reste un peu d’eau au creux de ta main. Bernard attend sur le quai.",21)
+	UI.button(m.body,"Rendre l’eau à la mer",start_finale.bind("tide"),true).grab_focus()
+	UI.button(m.body,"Ouvrir la Bonde",start_finale.bind("empty"))
+	if Voyage.can_home():UI.button(m.body,"Rejoindre Bernard chez lui",start_finale.bind("home"))
+	UI.button(m.footer,"Revenir sur la grève",close_panel)
+
+func start_finale(which:String)->void:
+	if not Voyage.choose_ending(which):return
+	story_choice=which;close_panel();photo=false;hud.hide();glare.hide();player.hand.hide()
+	finale=0;finale_card=false
+	if which=="empty":world.start_finale();Sound.effect("plug")
+	Sound.ending(which)
+	world.crab.visible=which!="empty"
+	end_cam=Camera3D.new();add_child(end_cam);end_cam.current=true;end_cam.fov=63
+	if which=="home":
+		world.crab.global_position=S.place(Coast.DOCK.x+.9,Coast.DOCK.y+.4,.3)
 	set_final_camera()
 
 func set_final_camera()->void:
-	var t=clampf(finale/12.0,0.0,1.0)
-	var a=.32+t*.75
-	var d=lerpf(28,49,t)
-	end_cam.position=Vector3(sin(a)*d,lerpf(12,31,t),cos(a)*d)
-	end_cam.look_at(Vector3(0,-8,0))
+	var t:=clampf(finale/12.,0,1)
+	if story_choice=="empty":
+		var a:=.32+t*.75;var d:=lerpf(23.,48.,t)
+		end_cam.position=Vector3(sin(a)*d,lerpf(9,25,t),cos(a)*d);end_cam.look_at(Vector3(0,-8,0))
+		world.sky_env.environment.adjustment_enabled=true;world.sky_env.environment.adjustment_saturation=1.-t*.86
+	else:
+		var home:=story_choice=="home"
+		var o:Vector3=S.place(Coast.DOCK.x,Coast.DOCK.y)
+		end_cam.position=o+Vector3(2.4 if home else -2.,1.36+t*.16,2.8-t*.6)
+		end_cam.look_at(o+Vector3(0,.93,-1.5) if home else o+Vector3(-16,2,-42))
+		world.water.position.y=lerpf(Voyage.water_y(),3.62,smoothstep(.05,.93,t));world.sea.set_shader_parameter("sea_level",world.water.position.y)
+		world.sun.light_color=Color("#ffcf92").lerp(Color("#f4b080"),t)
+		if home:world.crab.global_position=o+Vector3(.9,.35,.48)
+	if t>.61 and notified_tier!=-9:
+		notified_tier=-9;say(story_choice)
 
 func finish_panel()->void:
-	finale=-1;hud.hide()
-	var m=panel("finish","La mer d’en dessous","La Bonde est ouverte",650,493)
-	UI.copy(m.body,"Le dernier navire disparaît dans le siphon. Le silence ne dure qu’une seconde. Sous cette mer, un océan plus grand attendait sa première cuillère.",21,UI.IVORY)
-	UI.text(m.body,"Bassin "+str(int(Voyage.p.basin)+1)+" vidé",24,UI.GOLD,true,true)
-	UI.copy(m.body,str(int(Voyage.p.drops))+" livraisons  ·  "+str(int(Voyage.p.scoops))+" puisages  ·  "+str(Voyage.p.seen.size())+" / 18 trouvailles au carnet.")
-	UI.copy(m.body,"Le carnet reste à toi. Dans le prochain bassin, tes outils auront 34 % de capacité en plus.")
-	UI.button(m.footer,"Ouvrir le bassin suivant",next_basin,true).grab_focus()
+	finale=-1;hud.hide();DialogueManager.clear()
+	var k:String=Voyage.p.ending
+	var title:String={"tide":"La Marée","empty":"Le Grand Vide","home":"La Maison"}.get(k,"Le dernier rivage")
+	var m=panel("finish",title,"Générique   ·   SPOONFUL",660,538)
+	UI.copy(m.body,{"tide":"La mer reprend sa place. Sur le comptoir, Bernard pose une deuxième tasse.","empty":"Le vent tourne une page du carnet. La table est mise pour une personne.","home":"La clé est dans la serrure. À côté de toi, une petite pince se repose sur le bois."}.get(k,"Le soir descend."),22)
+	UI.text(m.body,"Un conte de Fares   ·   Godot 4.5.1",19,UI.GOLD,true)
+	UI.copy(m.body,"%s puisages   ·   %s coquilles gagnées   ·   %d h %02d min"%[Voyage.number(Voyage.p.scoops),Voyage.number(Voyage.p.earned),int(Voyage.p.clock/3600),int(Voyage.p.clock/60)%60])
+	UI.copy(m.body,"%d / 18 pages   ·   %d / 3 fins découvertes"%[Voyage.p.seen.size(),Voyage.p.endings.size()])
+	if Voyage.p.endings.size()<3:UI.copy(m.body,"Certaines choses du rivage ont encore quelqu’un qui les attend.",17)
+	UI.button(m.body,"Se promener sur la même côte",free_walk,true).grab_focus()
+	UI.button(m.body,"Revenir avant le dernier choix",rewind_choice)
 	UI.button(m.footer,"Revenir au menu",return_menu)
 
-func next_basin()->void:
-	if Voyage.prestige():
-		playing=false;get_tree().reload_current_scene()
+func free_walk()->void:
+	Voyage.p.free=true;Voyage.p.pos=[];Voyage.save_now();playing=false;get_tree().reload_current_scene()
+
+func rewind_choice()->void:
+	if Voyage.rewind():playing=false;get_tree().reload_current_scene()
 
 func postcard(moment:String,delay:=.12)->void:
 	if DisplayServer.get_name()=="headless" or "--spoonful-test" in OS.get_cmdline_user_args():return
-	var file=Voyage.photo_folder().path_join("Bassin-%02d-%s.png"%[int(Voyage.p.basin)+1,moment])
+	var file=Voyage.photo_folder().path_join("Crique-%s.png"%moment)
 	if FileAccess.file_exists(file):return
 	await get_tree().create_timer(delay).timeout
 	if not is_inside_tree():return
@@ -352,7 +477,7 @@ func take_photo()->void:
 	await RenderingServer.frame_post_draw
 	var img=get_viewport().get_texture().get_image()
 	var folder=Voyage.photo_folder()
-	var name="Bassin-%02d-%s.png"%[int(Voyage.p.basin)+1,Time.get_datetime_string_from_system().replace(":","-")]
+	var name="Crique-%s.png"%Time.get_datetime_string_from_system().replace(":","-")
 	var ok=img.save_png(folder.path_join(name))
 	hud.visible=old
 	if ok==OK:notify_text("Photo enregistrée dans le dossier Photos de SPOONFUL.",3.0)
@@ -362,8 +487,8 @@ func _process(dt:float)->void:
 	throttle=maxf(0,throttle-dt);flash.color.a=move_toward(flash.color.a,0,dt*.8)
 	if finale>=0:
 		finale+=dt
-		world.animate(dt,finale);set_final_camera()
-		if finale>5.2 and not finale_card:
+		world.animate(dt,finale if story_choice=="empty" else -1);set_final_camera()
+		if finale>5.2 and not finale_card and story_choice=="empty":
 			finale_card=true;postcard("Le-tourbillon")
 		if finale>=12:finish_panel()
 		return
@@ -373,8 +498,11 @@ func _process(dt:float)->void:
 	world.animate(dt)
 	player.move(minf(dt,.07))
 	Voyage.tick(minf(dt,.18)*multiplier)
-	if int(Voyage.p.tier)>=3 and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and throttle<=0 and Voyage.p.bag<Voyage.capacity() and sample_water().x<900:do_scoop()
+	if int(Voyage.p.tier)>=1 and (Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_action_pressed("scoop")) and throttle<=0 and Voyage.p.bag<Voyage.capacity() and sample_water().x<900:do_scoop()
 	var reg=Voyage.region()
+	var bell:=floori(20.*Voyage.p.peak/Voyage.total())
+	if bell>int(Voyage.p.bells):
+		Voyage.p.bells=bell;Sound.layer(bell);notify_text(["Au quai, le moulin fait tourner sa première roue.","Une fenêtre bleue apparaît dans les rochers.","Bernard replie une petite carte de la côte.","Une cloche répond du fond de la crique."][bell%4],4.5)
 	if reg>was_region:
 		was_region=reg;world.refresh();Sound.effect("reveal");flash.color.a=.21
 		notify_text(str(Voyage.db.zones[reg].title)+"  ·  "+str(Voyage.db.zones[reg].mark),6.0)
@@ -412,13 +540,18 @@ func _unhandled_input(e:InputEvent)->void:
 		return
 	if e.is_action_pressed("ui_cancel"):pause_panel()
 	elif e.is_action_pressed("journal"):book_panel()
+	elif e is InputEventKey and e.pressed and e.physical_keycode==KEY_F3:diagnostic=not diagnostic;update_hud()
 	elif e.is_action_pressed("debug_menu"):debug_panel()
 	elif e.is_action_pressed("photo"):
 		photo=not photo;hud.visible=not photo;player.hand.visible=not photo
 	elif e is InputEventKey and e.pressed and not e.echo and e.physical_keycode==KEY_F12:take_photo()
 	elif e is InputEventMouseMotion:player.mouse(e.relative)
 	elif e.is_action_pressed("use"):interact()
+	elif e.is_action_pressed("scoop"):do_scoop()
 	elif e is InputEventMouseButton and e.button_index==MOUSE_BUTTON_LEFT and e.pressed:do_scoop()
+
+func _exit_tree()->void:
+	DialogueManager.clear()
 
 func _notification(what:int)->void:
 	if what==NOTIFICATION_APPLICATION_FOCUS_OUT and playing and screen=="" and finale<0 and DisplayServer.get_name()!="headless" and not "--spoonful-test" in OS.get_cmdline_user_args():

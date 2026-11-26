@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/tub.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "tub"
+title = "Baquet à cordes"
+capacity = 22000
+scoop = 4400
+stroke_seconds = 0.87
+spill_rate = 0.044
+slowdown = 0.21
+price = 640
+gate = 0.55
+delivery = 13
+leverage = 75
+auto_rate = 3500
+verb = "Remplir le baquet"
+description = "Prends les deux poignées. Le moulin de grève tire désormais aussi sur le siphon."
+model = ExtResource("2")

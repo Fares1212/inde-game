@@ -136,9 +136,11 @@ static func owl_shell(parent:Node3D)->Node3D:
 	for side in [-1.0,1.0]:
 		var h=Vector3(0.24*side,0.42,0.19)
 		rod(head,Vector3(0.19*side,0.06,0.16),h,0.08,Color("#d88845"))
-		piece(head,"ball",h,Vector3(0.22,0.25,0.21),Color("#f9d48e"))
-		piece(head,"ball",h+Vector3(0,0.025,0.089),Vector3(0.115,0.14,0.065),Color("#14312e"))
-		piece(head,"ball",h+Vector3(-0.027,0.061,0.12),Vector3.ONE*0.043,Color.WHITE)
+		var eye:=root(head,h)
+		eye.set_meta("blinks",true)
+		piece(eye,"ball",Vector3.ZERO,Vector3(0.22,0.25,0.21),Color("#f9d48e"))
+		piece(eye,"ball",Vector3(0,0.025,0.089),Vector3(0.115,0.14,0.065),Color("#14312e"))
+		piece(eye,"ball",Vector3(-0.027,0.061,0.12),Vector3.ONE*0.043,Color.WHITE)
 		for i in 3:
 			var z=0.24-i*0.22
 			var joint=Vector3(side*(0.58+i*0.07),0.32,z)
@@ -151,52 +153,3 @@ static func owl_shell(parent:Node3D)->Node3D:
 			piece(claw,"cone",Vector3(offset,0.14,0.10),Vector3(0.15,0.26,0.15),Color("#e89050"),Vector3(0.48,0,-offset*2.4))
 	return n
 
-static func bowl(parent:Node3D,w:float,h:float,length:float,p:Vector3,mat:Color)->Node3D:
-	var shape=SurfaceTool.new()
-	shape.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for ring in 5:
-		for i in 28:
-			for point in [Vector2(ring,i),Vector2(ring+1,i+1),Vector2(ring+1,i),Vector2(ring,i),Vector2(ring,i+1),Vector2(ring+1,i+1)]:
-				var t=point.x/5.0
-				var a=TAU*point.y/28.0
-				shape.set_normal(Vector3(-2*h*t*cos(a)/w,1,-2*h*t*sin(a)/length).normalized())
-				shape.add_vertex(Vector3(w*t*cos(a),h*t*t,length*t*sin(a)))
-	var n=MeshInstance3D.new()
-	n.mesh=shape.commit()
-	var pigment=paint(mat,.16).duplicate()
-	pigment.cull_mode=BaseMaterial3D.CULL_DISABLED
-	pigment.roughness=.48
-	n.material_override=pigment
-	parent.add_child(n);n.position=p
-	return n
-
-static func tool(parent:Node3D,tier:int)->Node3D:
-	var n=root(parent)
-	var brass=Color("#c99656")
-	var silver=Color("#cddcda")
-	var teal=Color("#397f7d")
-	var wood=Color("#925f41")
-	match tier:
-		0,1:
-			rod(n,Vector3(0,-0.13,0.12),Vector3(0,0.10,-0.32),0.038 if tier==0 else 0.055,wood if tier==1 else Color("#7e8d87"))
-			rod(n,Vector3(0,.080,-.283),Vector3(0,.102,-.335),.046,brass)
-			bowl(n,0.097 if tier==0 else 0.17,0.047 if tier==0 else 0.11,0.15 if tier==0 else 0.18,Vector3(0,0.12,-0.42),silver if tier==0 else brass)
-		2:
-			bowl(n,0.19,0.29,0.19,Vector3(0,-0.21,-0.23),teal)
-			piece(n,"ring",Vector3(0,0.09,-0.23),Vector3(0.41,0.13,0.41),silver)
-			piece(n,"ring",Vector3(0,0.12,-0.23),Vector3(0.42,0.11,0.39),brass,Vector3(PI/2,0,0))
-		3,4:
-			piece(n,"tube",Vector3(0,-0.035,-0.29),Vector3(0.25,0.43,0.25),teal,Vector3(0.45,0,-0.14))
-			rod(n,Vector3(0,0.11,-0.34),Vector3(0,0.34,-0.46),0.055,silver)
-			rod(n,Vector3(-0.16,0.33,-0.46),Vector3(0.16,0.33,-0.46),0.065,wood)
-			piece(n,"ring",Vector3(0.13,-0.07,-0.26),Vector3(0.26,0.11,0.26),brass,Vector3(0,0,PI/2))
-			if tier==4:
-				for j in 4:
-					var a=j*PI/2
-					piece(n,"box",Vector3(0.135*cos(a),0.08+0.135*sin(a),-0.55),Vector3(0.21,0.08,0.025),Color("#ede1b7"),Vector3(0,0,a))
-		5:
-			piece(n,"box",Vector3(0,0.0,-0.25),Vector3(0.46,0.26,0.46),Color("#e8b954"),Vector3(0.14,0.2,0.12))
-			for i in 13:
-				var a=i*2.39996
-				piece(n,"rock",Vector3(0.19*cos(a),0.11+0.04*sin(a*2.0),-0.25+0.19*sin(a)),Vector3(0.07,0.035,0.065),Color("#b88c42"))
-	return n

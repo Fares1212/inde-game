@@ -1,3 +1,3 @@
-# Après la première édition
+# Observations de jeu à recueillir
 
-Les retours les plus utiles pour l’équilibrage concernent le temps avant la première louche, la visibilité des déversoirs successifs et la compréhension du bonus de bassin. Les comptes rendus peuvent préciser le bassin, l’outil, la région et les réglages de qualité.
+Les mesures humaines à comparer avec le simulateur sont le temps avant la louche, la durée des trajets chargés et le temps passé à chercher la dernière page. Sur le matériel ancien, mesurer séparément la résolution et les ombres près du comptoir.

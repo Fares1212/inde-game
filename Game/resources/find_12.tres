@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Clé de faïence"
+region = 4
+value = 55
+shape = "key"
+lore = "La petite tête bleue représente un robinet."
+id = "find_12"
+journal_id = 12
+rarity = "Courant"

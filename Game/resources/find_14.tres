@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Tuile du vieux quai"
+region = 4
+value = 70
+shape = "tile"
+lore = "Le bleu de cette tuile revient dans les dessins de la petite maison de Bernard."
+id = "find_14"
+journal_id = 14
+rarity = "Rare"

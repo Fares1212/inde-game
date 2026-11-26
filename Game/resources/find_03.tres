@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Corail de poche"
+region = 1
+value = 8
+shape = "coral"
+lore = "Le creux de ses branches garde un peu de la dernière pluie."
+id = "find_03"
+journal_id = 3
+rarity = "Courant"

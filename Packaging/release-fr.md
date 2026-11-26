@@ -1,8 +1,10 @@
+**La crique des objets perdus** accueille six récipients à contenance réelle, dix-huit trouvailles et trois fins sur une seule mer. Bernard vend des outils, des digues et des repères de pêche sous son auvent. Une sauvegarde automatique précède le dernier choix. Les anciennes parties sont converties.
+
 Un crabe te confie une cuillère à café. La mer n’a pas l’air inquiète.
 
-**Windows 10/11 64 bits** — Télécharge et ouvre `Spoonful-1.0.0-Windows-Setup.exe`. Le dernier écran permet de lancer le jeu. Un raccourci SPOONFUL est ajouté au menu Démarrer.
+**Windows 10/11 64 bits** — Télécharge et ouvre `Spoonful-2.0.0-Windows-Setup.exe`. Le dernier écran permet de lancer le jeu. Un raccourci SPOONFUL est ajouté au menu Démarrer.
 
-**macOS Intel et Apple Silicon** — Le fichier `Spoonful-1.0.0-macOS.pkg` installe SPOONFUL dans Applications. Le paquet est distribué sans notarisation Apple. L’installateur Windows est distribué sans signature d’éditeur.
+**macOS Intel et Apple Silicon** — Le fichier `Spoonful-2.0.0-macOS.pkg` installe SPOONFUL dans Applications. Le paquet est distribué sans notarisation Apple. L’installateur Windows est distribué sans signature d’éditeur.
 
 **Linux x86-64** — Extrais l’archive puis lance `SPOONFUL.x86_64` depuis le dossier qui contient son fichier PCK.
 

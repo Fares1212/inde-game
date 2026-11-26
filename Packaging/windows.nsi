@@ -3,7 +3,7 @@ Unicode True
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
 !ifndef VERSION
-  !define VERSION "1.0.0"
+  !define VERSION "2.0.0"
 !endif
 !ifndef INPUT
   !error "INPUT must name the folder containing the game"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Rose des bains"
+region = 4
+value = 59
+shape = "tile"
+lore = "Sur cette dalle, le nord s’appelle « chaud » et le sud « froid »."
+id = "find_13"
+journal_id = 13
+rarity = "Insolite"

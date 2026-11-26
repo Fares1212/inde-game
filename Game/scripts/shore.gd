@@ -11,6 +11,9 @@ static func ground(x:float,z:float)->float:
 	while i<RAD.size()-2 and r>RAD[i+1]:i+=1
 	var t=clampf((r-RAD[i])/(RAD[i+1]-RAD[i]),0,1)
 	var y=lerpf(ELEV[i],ELEV[i+1],t)
+	# The northern headlands open onto the same water plane as the navigable cove.
+	var mouth:=smoothstep(21.,89.,-z)*(1.-smoothstep(39.,87.,absf(x+.12*z)))
+	y=lerpf(y,minf(y,-9.94+.22*cos(x*.06)),mouth)
 	return y+0.17*sin(x*0.16+z*0.025)*cos(z*0.155)+0.08*sin(z*0.39+x*0.12)
 
 static func place(x:float,z:float,offset:=0.0)->Vector3:

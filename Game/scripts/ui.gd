@@ -20,19 +20,17 @@ static func box_style(bg:Color,edge:Color=Color.TRANSPARENT,corner:=8,border:=1)
 	s.content_margin_left=14;s.content_margin_right=14;s.content_margin_top=9;s.content_margin_bottom=9
 	return s
 
-static var fonts:Dictionary={}
+const THEME=preload("res://resources/coast_theme.tres")
+const INK=Color("#283d3c")
+const PAPER=Color("#f6e5c5")
+
 static func face(serif:=false,bold:=false)->Font:
-	var k=str(serif)+str(bold)
-	if fonts.has(k):return fonts[k]
-	var font=SystemFont.new()
-	font.font_names=PackedStringArray(["Georgia","Noto Serif","Liberation Serif"]) if serif else PackedStringArray(["Segoe UI","Noto Sans","Helvetica Neue","Arial","Liberation Sans"])
-	font.font_weight=700 if bold else 400
-	fonts[k]=font
-	return font
+	if serif:return preload("res://fonts/display-bold.tres") if bold else preload("res://fonts/display.tres")
+	return preload("res://fonts/body-bold.tres") if bold else preload("res://fonts/body.tres")
 
 static func text(parent:Node,word:String,size:=18,color:=IVORY,serif:=false,bold:=false)->Label:
 	var l=Label.new()
-	l.text=word;l.add_theme_font_override("font",face(serif,bold));l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_color",color)
+	l.text=word;l.add_theme_font_override("font",face(serif,bold));l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_color",INK if color in [IVORY,PALE] else (Color("#8d492b") if color==GOLD else color))
 	l.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
@@ -50,23 +48,16 @@ static func hbox(parent:Node,spacing:=10)->HBoxContainer:
 	var h=HBoxContainer.new();h.add_theme_constant_override("separation",spacing)
 	parent.add_child(h);return h
 
-static func card(parent:Node,color:=NAVY,border:=Color("#577875"))->PanelContainer:
-	var p=PanelContainer.new();p.add_theme_stylebox_override("panel",box_style(color,border))
-	parent.add_child(p);return p
+static func card(parent:Node,_color:=NAVY,_border:=Color.TRANSPARENT)->PanelContainer:
+	var p:=PanelContainer.new();p.theme=THEME;parent.add_child(p);return p
 
-static func button(parent:Node,title:String,fn:Callable,primary:=false)->Button:
-	var b=Button.new();b.text=title;b.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND
-	b.custom_minimum_size=Vector2(0,43)
-	b.add_theme_font_size_override("font_size",17);b.add_theme_font_override("font",face(false,true))
-	var normal=GOLD if primary else Color("#20484d")
-	b.add_theme_stylebox_override("normal",box_style(normal,Color("#758e81") if not primary else GOLD,6))
-	b.add_theme_stylebox_override("hover",box_style(Color("#f0c986") if primary else Color("#356165"),IVORY,6))
-	b.add_theme_stylebox_override("pressed",box_style(Color("#9db9a7"),GOLD,6))
-	b.add_theme_stylebox_override("disabled",box_style(Color("#284448"),Color("#4c6261"),6))
-	var focus=box_style(Color.TRANSPARENT,GOLD,6,2);b.add_theme_stylebox_override("focus",focus)
-	b.add_theme_color_override("font_color",DEEP if primary else IVORY);b.add_theme_color_override("font_hover_color",DEEP if primary else Color.WHITE)
-	b.add_theme_color_override("font_focus_color",DEEP if primary else IVORY);b.add_theme_color_override("font_disabled_color",Color("#a1b2ad"))
-	parent.add_child(b);b.pressed.connect(fn);return b
+static func button(parent:Node,word:String,action:Callable,primary:=false)->Button:
+	var b:=Button.new();b.text=word;b.custom_minimum_size.y=40
+	b.add_theme_stylebox_override("normal",THEME.get_stylebox("pressed" if primary else "normal","Button"))
+	b.add_theme_color_override("font_color",PAPER);b.add_theme_color_override("font_disabled_color",Color("#655d50"))
+	var focus:=StyleBoxFlat.new();focus.draw_center=false;focus.border_color=Color("#f8bb49");focus.set_border_width_all(3)
+	b.add_theme_stylebox_override("focus",focus);parent.add_child(b)
+	b.pressed.connect(func():Sound.effect("click",.55);action.call());return b
 
 static func meter(parent:Node,wide_px:=148)->ProgressBar:
 	var b=ProgressBar.new();b.show_percentage=false;b.max_value=1
@@ -117,10 +108,15 @@ static func pick(parent:Node,title:String,key:String,choices:Array)->void:
 static func options(parent:Control,back:Callable)->ColorRect:
 	var m=modal(parent,"Réglages","SPOONFUL",665,640)
 	var body=m.body
-	slider(body,"Musique","music",0,1,.01,"%");slider(body,"Effets et vagues","effects",0,1,.01,"%");slider(body,"Voix de Bernard","voice",0,1,.01,"%")
+	slider(body,"Musique","music",0,1,.01,"%");slider(body,"Bruitages","effects",0,1,.01,"%");slider(body,"Voix de Bernard","voice",0,1,.01,"%")
+	slider(body,"Ressac","ambience",0,1,.01,"%");slider(body,"Interface","ui",0,1,.01,"%")
+	slider(body,"Débit du texte","text_speed",15,68,1," car/s");slider(body,"Sous-titres","text_size",18,30,1," px")
 	slider(body,"Sensibilité souris","sensitivity",.25,3,.05,"×");slider(body,"Champ de vision","fov",55,100,1,"°");slider(body,"Éblouissement","glare",0,1,.01,"%")
 	pick(body,"Qualité graphique","quality",["Économe","Équilibrée","Haute"]);pick(body,"Taille de fenêtre","resolution",["960 × 540","1152 × 648","1600 × 900"])
 	toggle(body,"Plein écran","fullscreen");toggle(body,"Balancement de la caméra","bob");toggle(body,"Inverser la souris verticale","invert_y");toggle(body,"Sous-titres de Bernard","subtitles")
+	for action in ["forward","back","left","right","use","journal","jump","photo"]:
+		var caption:String={"forward":"Avancer","back":"Reculer","left":"Gauche","right":"Droite","use":"Interagir","journal":"Carnet","jump":"Sauter","photo":"Photo"}[action]
+		var input:=Binding.new();input.action=action;input.caption=caption;body.add_child(input)
 	var done=button(m.footer,"Enregistrer et revenir",func():Voyage.apply_options(true);Sound.apply_settings();back.call(),true)
 	done.grab_focus()
 	return m.root
@@ -157,3 +153,18 @@ static func album(parent:Control,back:Callable)->Control:
 	button(m.footer,"Ouvrir le dossier",func():OS.shell_open(path))
 	button(m.footer,"Retour",back,true).grab_focus()
 	return m.root
+
+class Binding extends Button:
+	var action:String
+	var caption:String
+	var listening:=false
+	func _ready()->void:
+		refresh();pressed.connect(func():listening=true;text="Appuie sur une touche…")
+	func refresh()->void:
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventKey:text=caption+"   ·   "+OS.get_keycode_string(ev.physical_keycode if DisplayServer.get_name()=="headless" else DisplayServer.keyboard_get_keycode_from_physical(ev.physical_keycode));return
+	func _input(ev:InputEvent)->void:
+		if listening and ev is InputEventKey and ev.pressed and not ev.echo:
+			listening=false;get_viewport().set_input_as_handled()
+			if ev.physical_keycode!=KEY_ESCAPE:Voyage.rebind(action,ev.physical_keycode)
+			refresh()

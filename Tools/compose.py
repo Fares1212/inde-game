@@ -1,14 +1,11 @@
-"""Render the original score, shoreline, foley and Bernard's French dialogue.
+"""Render the original score, shoreline, foley and coastal sound effects.
 
-Dependencies for rebuilding the checked-in Oggs: NumPy, ffmpeg and espeak-ng.
+Dependencies for rebuilding the checked-in Oggs: NumPy, and ffmpeg.
 """
-import json
 import math
 from pathlib import Path
 import shutil
 import subprocess
-import tempfile
-import wave
 
 import numpy as np
 
@@ -141,27 +138,11 @@ def foley():
     t=time(.085); encode('click0',np.sin(TAU*780*t)*np.exp(-t*68)*(1-np.exp(-t*1200)),.29)
 
 
-def voices():
-    db=json.loads((ROOT/'Game/Data/basins.json').read_text(encoding='utf8'))
-    with tempfile.TemporaryDirectory() as folder:
-        wav=Path(folder)/'bernard.wav'
-        for key, line in db['voices'].items():
-            subprocess.run(['espeak-ng','-v','fr','-s','154','-p','42','-w',str(wav),'--',line],check=True)
-            with wave.open(str(wav)) as source:
-                recorded=np.frombuffer(source.readframes(source.getnframes()),dtype='<i2').astype(float)/32768
-                native=source.getframerate()
-            s=np.interp(np.arange(round(len(recorded)*RATE/native))*native/RATE,np.arange(len(recorded)),recorded)
-            delay=int(.042*RATE)
-            s[delay:]+=.11*s[:-delay].copy()
-            encode('vo_'+key,s,.74)
-
-
 if __name__=='__main__':
-    if not all(shutil.which(x) for x in ('espeak-ng','ffmpeg')):
-        raise SystemExit('Installer espeak-ng et ffmpeg pour reconstruire les pistes.')
+    if not shutil.which('ffmpeg'):
+        raise SystemExit('Installer ffmpeg pour reconstruire les pistes.')
     DEST.mkdir(parents=True,exist_ok=True)
     lullaby()
     surf()
     foley()
-    voices()
     print(f'{len(list(DEST.glob("*.ogg")))} pistes rendues.')

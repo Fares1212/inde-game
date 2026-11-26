@@ -92,7 +92,7 @@ func shop()->void:
 	check(game.screen=="shop","Ouverture de la boutique")
 
 func end_test()->void:
-	var result={"passed":not failed,"checks":steps,"backend":DisplayServer.get_name(),"basin":Voyage.p.get("basin",-1),"version":ProjectSettings.get_setting("application/config/version")}
+	var result={"passed":not failed,"checks":steps,"backend":DisplayServer.get_name(),"basin":Voyage.p.get("basin",-1),"endings":Voyage.p.get("endings",{}).size(),"version":ProjectSettings.get_setting("application/config/version")}
 	var file=FileAccess.open(folder+"/result.json",FileAccess.WRITE)
 	if file:file.store_string(JSON.stringify(result));file.close()
 	print(("SPOONFUL_QA_FAIL " if failed else "SPOONFUL_QA_PASS ")+JSON.stringify(result))
@@ -107,7 +107,7 @@ func run()->void:
 	await wait_frames(5)
 	var menu=get_tree().current_scene
 	if not check(menu!=null and menu.name=="Menu","Démarrage du menu"):end_test();return
-	check(Sound.samples.size()==27,"Présence des 27 pistes musicales, voix et effets")
+	check(Sound.samples.size()>=20,"Banque de bruitages et ambiance")
 	await shot("01-menu")
 	menu.start_new()
 	await wait_frames(5)
@@ -115,8 +115,11 @@ func run()->void:
 	if not check(game!=null and game.name=="Game" and game.screen=="intro","Introduction du premier voyage"):end_test();return
 	press(game.modal,"Prendre la cuillère")
 	check(Voyage.p.tier==0 and Voyage.p.drained==0,"Première cuillère")
-	game.player.go(0,83.2);game.player.yaw=-.025;game.player.pitch=-.105;game.player.orient()
+	game.player.go(0,90.4);game.player.yaw=-.12;game.player.pitch=-.095;game.player.orient()
 	game.update_hud();await shot("02-lagon")
+	game.hud.hide();await shot("outil-0-vide");game.player.hand.hide()
+	await shot("00-cote")
+	game.hud.show();game.player.hand.show()
 	var start_z=game.player.position.z
 	Input.action_press("forward")
 	for i in 10:
@@ -125,53 +128,69 @@ func run()->void:
 	check(game.player.position.z<start_z,"Déplacement en vue subjective")
 	deliver()
 	if failed:end_test();return
-	check(Voyage.percent(Voyage.p.drained/Voyage.total())=="0,000001 %","Premier millionième")
-	check(not Voyage.buy(),"Achat refusé si solde insuffisant")
-	var dry=Voyage.p.drained
-	var before_y=Voyage.water_y();Voyage.tick(29)
-	check(Voyage.p.drained==dry and absf(Voyage.water_y()-before_y)>.05,"Marée distincte du volume retiré")
-	loot_for_market()
-	check(Voyage.p.taken.size()>0 and Voyage.p.seen.size()>0,"Carnet alimenté")
-	var sq=Voyage.p.drained;game.player.record();Voyage.save_now()
-	Voyage.p=Voyage.blank()
-	check(Voyage.continue_run() and Voyage.p.drained==sq and not Voyage.p.seen.is_empty(),"Reprise avec découvertes et cargaison")
-	shop();await shot("03-boutique")
+	check(Voyage.p.drained==5 and Voyage.volume(Voyage.p.drained)=="5 mL","Première cuillère de cinq millilitres")
+	check(game.region_meter.value==Voyage.p.drained/Voyage.total(),"Jauge globale")
+	loot_for_market();shop();game.shop_tab="objects";game.shop_panel(false)
 	if Voyage.cargo_value()>0:press(game.modal,"Vendre les trouvailles")
-	check(Voyage.cargo_value()==0,"Vente groupée")
-	game.close_panel()
-	game.player.go(C.SHOP.x+1.65,C.SHOP.y+2.8);aim_at(game.world.crab.global_position+Vector3.UP*.7)
-	game.hud.hide();await shot("04-bernard");game.hud.show()
-	for tier in range(1,6):
-		var count=0
-		while Voyage.upgrade_status()!="" and count<125:
-			deliver();count+=1
-			if failed:end_test();return
-		if not check(Voyage.upgrade_status()=="","Palier accessible "+str(tier)):end_test();return
-		shop();press(game.modal,"Acheter cet outil")
-		check(Voyage.p.tier==tier,"Outil acheté "+str(tier))
-		game.close_panel()
-		if tier==4:
-			var v=Voyage.p.drained;Voyage.tick(2);check(Voyage.p.drained>v,"Éoliennes automatiques")
-	if failed:end_test();return
-	while not Voyage.plug_ready() and frames<50:
-		deliver();frames+=1
+	check(Voyage.cargo_value()==0,"Besace vendue")
+	game.close_panel();game.shop_tab="vessels"
+	while Voyage.p.drops<8:deliver()
+	shop();press(game.modal,"Amorcer le siphon");game.close_panel()
+	check(Voyage.p.primer,"Siphon amorcé")
+	for i in range(1,6):
+		# Exercise purchases on either side of their gate. Pacing uses the separate timed simulator.
+		var v:VesselData=Voyage.db.tools[i]
+		Voyage.p.drained=v.gate*Voyage.total();Voyage.p.peak=Voyage.p.drained;Voyage.p.coins=v.price-1
+		check(not Voyage.buy(),"Solde insuffisant")
+		Voyage.p.coins=v.price
+		shop();press(game.modal,"Acheter cet outil");game.close_panel()
+		check(Voyage.p.tier==i and is_instance_valid(game.player.liquid),"Récipient ouvert et eau du modèle")
+		game.player.kick=0;game.player.swing=1
+		game.player.go(0,82);game.player.yaw=0;game.player.pitch=-.46 if i==5 else -.16;game.player.orient()
+		for j in 3:game.player.move(.05)
+		Voyage.p.bag=0;game.player.fill_view=0;game.player.move(.01)
+		game.hud.hide();await shot("outil-%d-vide"%i)
+		Voyage.p.bag=Voyage.capacity()*.64;game.player.fill_view=.64;game.player.move(.01)
+		check(game.player.liquid.visible,"Eau visible en main")
+		await shot("outil-%d-plein"%i);game.hud.show()
+		Voyage.p.bag=0;deliver()
 		if failed:end_test();return
-	check(Voyage.plug_ready() and Voyage.region()==5,"Toutes les zones traversées")
-	game.world.refresh();game.player.go(0,2.1);game.throttle=0;game.interact()
-	check(Voyage.p.finished and game.finale>=0,"Ouverture manuelle de la Bonde")
-	game.finale=5.5;game.set_final_camera();game.world.animate(.016,5.5)
-	await shot("05-bonde")
-	game.finale=12;game._process(.05)
-	check(game.screen=="finish","Écran de fin")
-	var findings=Voyage.p.seen.size()
-	press(game.modal,"Ouvrir le bassin suivant");await wait_frames(4)
-	game=get_tree().current_scene
-	check(Voyage.p.basin==1 and Voyage.p.drained==0 and not Voyage.p.finished and Voyage.p.seen.size()==findings and Voyage.power_bonus()>1,"Prestige avec conservation du carnet")
-	game.pause_panel();press(game.modal,"Réglages");check(game.screen=="settings","Réglages de pause")
-	press(game.modal,"Enregistrer et revenir");check(game.screen=="pause","Retour depuis les réglages")
-	press(game.modal,"Album photo");check(game.screen=="album","Album accessible depuis la partie")
-	press(game.modal,"Retour");check(game.screen=="pause","Retour depuis l’album")
+	game.player.go(C.SHOP.x+.6,C.SHOP.y+4.3);aim_at(game.world.crab.global_position+Vector3.UP*.55)
+	game.hud.hide();game.player.hand.hide();await shot("04-bernard");game.hud.show();game.player.hand.show()
+	shop();await shot("03-boutique");game.close_panel()
+	Voyage.p.drained=Voyage.total();Voyage.p.peak=Voyage.total();game.world.refresh()
+	game.player.go(0,2);game.throttle=0;game.interact();check(game.screen=="choice","Dernier choix")
+	check(not Voyage.choose_ending("home"),"Secret protégé")
+	for k in ["tide","empty","home"]:
+		if k=="home":
+			game.close_panel();game.world.refresh()
+			for found in game.world.finds:
+				if not found.node.visible or Voyage.p.seen.has(Voyage.db.finds[found.kind].id):continue
+				game.player.go(found.p.x,found.p.z+.16);aim_at(found.p+Vector3.UP*.2)
+				game.throttle=0;game.interact()
+			check(Voyage.p.seen.size()==18,"Les 18 pages peuvent être ramassées sur le terrain")
+			shop();game.shop_tab="objects";game.shop_panel(false)
+			if Voyage.cargo_value()>0:press(game.modal,"Vendre les trouvailles")
+			check(Voyage.p.cargo.has("find_16"),"La clé reste dans la besace après la vente")
+			press(game.modal,"Rendre la clé")
+			check(Voyage.can_home(),"Carnet complet et clé rendue sur la côte")
+			game.close_panel();game.book_panel();await shot("05-carnet");game.close_panel()
+			game.player.go(0,2);game.throttle=0;game.interact()
+		game.start_finale(k);check(Voyage.p.ending==k,"Fin choisie")
+		game.finale=6.5;game._process(.01);await shot("fin-"+k)
+		game.finale=12;game._process(.03);check(game.screen=="finish","Générique")
+		if k=="home":
+			press(game.modal,"Se promener");await wait_frames(5);game=get_tree().current_scene
+			check(Voyage.p.free and game.screen=="","Exploration libre")
+			game.pause_panel()
+		press(game.modal,"Revenir avant");await wait_frames(5);game=get_tree().current_scene
+		check(not Voyage.p.finished and Voyage.plug_ready() and Voyage.p.endings.has(k),"Reprise du choix sur la même mer")
+	check(Voyage.p.endings.size()==3,"Trois fins sur une côte")
+	var legacy={"schema":1,"tier":2,"basin":1,"drained":77500000.0,"bag":46900.0,"coins":81,"seen":{"2":true},"cargo":{"2":1},"taken":{"2":true}}
+	var migrated:=Voyage.migrate(legacy)
+	check(is_equal_approx(migrated.drained/Voyage.total(),.5) and migrated.seen.has("find_02") and migrated.coins==81 and migrated.bag==4250,"Migration de progression V1")
+	game.pause_panel();press(game.modal,"Réglages");press(game.modal,"Enregistrer et revenir");check(game.screen=="pause","Réglages")
 	Voyage.save_now();Voyage.save_now()
-	var path=Voyage.storage+Voyage.SAVE_NAME+".json";var damaged=FileAccess.open(path,FileAccess.WRITE);damaged.store_string("{");damaged.close()
-	check(Voyage.continue_run() and Voyage.p.basin==1,"Récupération de la sauvegarde de secours")
+	var damaged=FileAccess.open(Voyage.storage+Voyage.SAVE_NAME+".json",FileAccess.WRITE);damaged.store_string("{");damaged.close()
+	check(Voyage.continue_run() and Voyage.p.endings.size()==3,"Sauvegarde de secours")
 	end_test()

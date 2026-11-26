@@ -1,0 +1,65 @@
+[gd_resource type="Theme" load_steps=10 format=3]
+[ext_resource type="FontVariation" path="res://fonts/body.tres" id="font"]
+[ext_resource type="Texture2D" path="res://art/ui/paper.png" id="paper"]
+[ext_resource type="Texture2D" path="res://art/ui/ink.png" id="ink"]
+[ext_resource type="Texture2D" path="res://art/ui/rust.png" id="rust"]
+[ext_resource type="Texture2D" path="res://art/ui/sea.png" id="sea"]
+
+[sub_resource type="StyleBoxTexture" id="panel_paper"]
+texture = ExtResource("paper")
+texture_margin_left = 10.0
+content_margin_left = 14.0
+texture_margin_top = 10.0
+content_margin_top = 9.0
+texture_margin_right = 10.0
+content_margin_right = 14.0
+texture_margin_bottom = 10.0
+content_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="panel_ink"]
+texture = ExtResource("ink")
+texture_margin_left = 10.0
+content_margin_left = 14.0
+texture_margin_top = 10.0
+content_margin_top = 9.0
+texture_margin_right = 10.0
+content_margin_right = 14.0
+texture_margin_bottom = 10.0
+content_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="panel_rust"]
+texture = ExtResource("rust")
+texture_margin_left = 10.0
+content_margin_left = 14.0
+texture_margin_top = 10.0
+content_margin_top = 9.0
+texture_margin_right = 10.0
+content_margin_right = 14.0
+texture_margin_bottom = 10.0
+content_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxTexture" id="panel_sea"]
+texture = ExtResource("sea")
+texture_margin_left = 10.0
+content_margin_left = 14.0
+texture_margin_top = 10.0
+content_margin_top = 9.0
+texture_margin_right = 10.0
+content_margin_right = 14.0
+texture_margin_bottom = 10.0
+content_margin_bottom = 9.0
+
+[resource]
+default_font = ExtResource("font")
+default_font_size = 18
+PanelContainer/styles/panel = SubResource("panel_paper")
+Button/styles/normal = SubResource("panel_ink")
+Button/styles/hover = SubResource("panel_sea")
+Button/styles/pressed = SubResource("panel_rust")
+Button/styles/disabled = SubResource("panel_paper")
+TabContainer/styles/panel = SubResource("panel_paper")
+TabContainer/styles/tab_selected = SubResource("panel_sea")
+TabContainer/styles/tab_unselected = SubResource("panel_ink")
+TooltipPanel/styles/panel = SubResource("panel_ink")
+ProgressBar/styles/background = SubResource("panel_ink")
+ProgressBar/styles/fill = SubResource("panel_sea")

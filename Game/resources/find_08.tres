@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Petit voilier de bois"
+region = 2
+value = 21
+shape = "toy"
+lore = "Sur la quille, une écriture enfantine a signé « B. »."
+id = "find_08"
+journal_id = 8
+rarity = "Rare"

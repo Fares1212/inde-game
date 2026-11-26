@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/pail.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "pail"
+title = "Seau à douves"
+capacity = 8500
+scoop = 2125
+stroke_seconds = 0.72
+spill_rate = 0.03
+slowdown = 0.12
+price = 110
+gate = 0.045
+delivery = 6
+leverage = 105
+auto_rate = 0
+verb = "Remplir le seau"
+description = "Quatre puisages. Les cerclages retiennent le bois et l’anse pivote sur ses rivets."
+model = ExtResource("2")

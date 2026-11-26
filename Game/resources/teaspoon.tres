@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/teaspoon.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "teaspoon"
+title = "Cuillère à café"
+capacity = 5
+scoop = 5
+stroke_seconds = 0.42
+spill_rate = 0
+slowdown = 0.005
+price = 0
+gate = 0
+delivery = 1
+leverage = 1
+auto_rate = 0
+verb = "Puiser"
+description = "Cinq millilitres. La première goutte fait sonner la cloche du déversoir."
+model = ExtResource("2")

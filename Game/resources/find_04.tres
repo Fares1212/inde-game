@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Tasse d’écume"
+region = 1
+value = 11
+shape = "cup"
+lore = "Elle a la même anse que la maison de Bernard. Il change de sujet."
+id = "find_04"
+journal_id = 4
+rarity = "Insolite"

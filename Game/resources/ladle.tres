@@ -1,0 +1,21 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://resources/vessel_data.gd" id="1"]
+[ext_resource type="PackedScene" path="res://models/ladle.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "ladle"
+title = "Louche de cuisine"
+capacity = 650
+scoop = 325
+stroke_seconds = 0.57
+spill_rate = 0.023
+slowdown = 0.04
+price = 27
+gate = 0.007
+delivery = 3
+leverage = 510
+auto_rate = 0
+verb = "Plonger la louche"
+description = "Deux puisages dans un bol en cuivre. Son manche porte les initiales de Bernard."
+model = ExtResource("2")

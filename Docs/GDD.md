@@ -1,22 +1,33 @@
-# SPOONFUL
+# La crique des objets perdus
 
-En vue subjective, vider un océan à la cuillère et découvrir qui a installé la baignoire. Le premier « plic » retire exactement un millionième de pour cent d’un bassin de cent millions d’unités. Le niveau baisse au déversoir. La marée fait remonter l’eau le long du rivage sans révoquer les sommes gagnées ou les trouvailles déjà sorties du sable.
+Une seule mer de 500 000 litres. Le fond descend du lagon jusqu’à la fosse en passant par le récif, la forêt de varech, les épaves et la plaine abyssale. Grâce au siphon installé par Bernard, une petite quantité d’eau entraîne un volume supérieur. Le nombre de litres dans la main et la baisse globale gardent chacun leur jauge et leur unité.
 
-## Les détours qui paient
+| Récipient | Capacité | Geste |
+|---|---:|---|
+| Cuillère à café | 5 mL | Plonger la petite cuillère et rapporter le premier « plic » |
+| Louche de cuisine | 650 mL | Puiser avec le bol profond |
+| Seau à douves | 8,5 L | Remplir le seau suspendu par son anse |
+| Arrosoir de cuivre | 14 L | Immerger le corps et diriger le bec vers la goulotte |
+| Baquet à cordes | 22 L | Transporter à deux poignées pendant que le moulin travaille |
+| Tonneau sur diable | 38 L | Pousser le fût sur ses deux roues et le basculer au déversoir |
 
-Un trajet rapide donne un bon de pompage à chaque livraison. Un détour à marée basse permet de vendre plusieurs objets chez Bernard et de remplir les dix-huit notices du carnet. Les améliorations combinent un seuil de vidange et un prix. Toutes les valeurs de départ, les trouvailles et les répliques sont dans [les données du bassin](../Game/Data/basins.json).
+Les vitesses, capacités, pertes, revenus et prix se règlent dans les six ressources de récipient référencées par `Game/resources/mer.tres`. La marée montante réduit le progrès net. Une digue protège la quantité déjà retirée lors de son achat. Courir accélère le trajet et fait perdre une partie de la cargaison. Des déversoirs successifs se découvrent le long de la conduite. Les repères de pêche de Bernard pointent vers une trouvaille encore inconnue.
 
-| Outil | Capacité | Prix en coquilles | Ce que cela change |
-|---|---:|---:|---|
-| Cuillère | 1 | offerte | Première interaction et retour très court |
-| Louche | 1 600 | 8 | Deux mouvements pour remplir le bol |
-| Seau | 70 000 | 38 | Des livraisons assez grosses pour découvrir la forêt |
-| Pompe | 1 100 000 | 155 | Pompage continu au bord de l’eau |
-| Éoliennes | 3 600 000 | 420 | Extraction automatique pendant la recherche de trésors |
-| Éponge | 9 500 000 | 790 | Derniers pans de mer retirés par essorage |
+## Courbe simulée
 
-Six paliers de relief exposent le lagon, le récif, le varech, les épaves, la plaine carrelée et la fosse. Des abris viennent peu à peu entourer le comptoir. La Bonde se manipule à la main. Son ouverture entraîne la flotte dans un tourbillon, montre les résultats du bassin et laisse le joueur choisir le moment du départ. Le cycle suivant conserve le carnet, attribue un bonus permanent à la capacité et change la disposition des trésors.
+Le simulateur parcourt la pente du terrain pour estimer le trajet entre l’eau et le déversoir. Il applique les temps de remplissage, le ralentissement dû au poids, les revenus, les courants et les seuils d’achat du jeu. Le profil exploration ajoute des pauses et des détours. Les deux modèles achètent les récipients dès que possible et ignorent les achats facultatifs.
 
-## Lecture, confort, fin de session
+| Jalon | Trajet optimisé | Exploration |
+|---|---:|---:|
+| Siphon amorcé | 55 s | 1 min 37 s |
+| Louche achetée | 6 min 45 s | 11 min 27 s |
+| 1 % | 7 min 37 s | 12 min 52 s |
+| 10 % | 24 min 14 s | 48 min 21 s |
+| 50 % | 1 h 06 min 35 s | 2 h 39 min 45 s |
+| Choix final | 2 h 01 min 46 s | 4 h 57 min 36 s |
 
-Une aide contextuelle accompagne la première livraison et la première vente. L’état de la marée se lit indépendamment de la couleur. Le volume musical, les effets, les voix, l’exposition face au soleil, la sensibilité et le champ de vision se règlent séparément. La sauvegarde locale garde la cargaison et l’étape de progression. La transition de bassin doit résister à la fermeture du jeu. Le premier constat amusant, la première grande épave découverte et le siphon final constituent les trois instants de partage. La partie se joue entièrement hors ligne.
+Ces durées proviennent de la simulation. La chasse libre, les trajets à la nage, les objets vendus et les achats facultatifs changent la durée d’une partie humaine.
+
+## Les trois fins
+
+La Marée ramène l’eau sur la rive. Le Grand Vide laisse le treuil tourner jusqu’au silence. La Maison demande les dix-huit pages du carnet et la restitution à Bernard de la clé du logis. Un point de reprise lié à la partie conserve l’état avant le choix et les fins déjà découvertes. La promenade libre reprend ensuite sur la même côte.

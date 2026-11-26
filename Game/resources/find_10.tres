@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Hublot d’ambre"
+region = 3
+value = 36
+shape = "ring"
+lore = "Une anémone habite son cadre comme une vieille dame à la fenêtre."
+id = "find_10"
+journal_id = 10
+rarity = "Insolite"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Clé du logis"
+region = 5
+value = 0
+shape = "key"
+lore = "Une dent tordue et un ruban bleu. Bernard porte encore la marque du ruban autour de sa pince."
+id = "find_16"
+journal_id = 16
+rarity = "Insolite"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Peigne de varech"
+region = 2
+value = 15
+shape = "comb"
+lore = "Les algues ont poussé dans le sens des dents."
+id = "find_06"
+journal_id = 6
+rarity = "Courant"

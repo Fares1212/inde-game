@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Pièce au bigorneau"
+region = 0
+value = 4
+shape = "coin"
+lore = "Elle porte le profil d’un mollusque qui avait visiblement du pouvoir."
+id = "find_01"
+journal_id = 1
+rarity = "Insolite"

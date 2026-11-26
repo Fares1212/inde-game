@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+title = "Écaille de bonde"
+region = 5
+value = 100
+shape = "ring"
+lore = "Elle tient dans ta poche. Sa sœur a la taille d’une place de village."
+id = "find_17"
+journal_id = 17
+rarity = "Rare"

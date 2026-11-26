@@ -25,10 +25,10 @@ window/stretch/aspect="expand"
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-anti_aliasing/quality/screen_space_aa=1
+textures/vram_compression/import_etc2_astc=true
 textures/default_filters/use_nearest_mipmap_filter=false
 environment/defaults/default_clear_color=Color(0.35,0.65,0.68,1)
 
 [audio]
-general/text_to_speech=true
+general/text_to_speech=false
 driver/enable_input=false

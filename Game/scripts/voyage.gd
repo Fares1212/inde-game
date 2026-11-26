@@ -61,8 +61,9 @@ func decode_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path): return {}
 	var f=FileAccess.open(path,FileAccess.READ)
 	if f==null: return {}
-	var raw=JSON.parse_string(f.get_as_text())
-	return raw if raw is Dictionary else {}
+	var json=JSON.new()
+	if json.parse(f.get_as_text())!=OK: return {}
+	return json.data if json.data is Dictionary else {}
 
 func read_json(stem: String) -> Dictionary:
 	for ext in [".json",".bak",".tmp"]:
@@ -126,7 +127,7 @@ func apply_display(resize := false) -> void:
 			var work=DisplayServer.screen_get_usable_rect().size
 			DisplayServer.window_set_size(sizes[int(opt.resolution)].min(work))
 	get_viewport().scaling_3d_scale=[0.72,0.9,1.0][int(opt.quality)]
-	get_viewport().screen_space_aa=Viewport.SCREEN_SPACE_AA_DISABLED if int(opt.quality)==0 else Viewport.SCREEN_SPACE_AA_FXAA
+	get_viewport().msaa_3d=Viewport.MSAA_2X if int(opt.quality)==2 else Viewport.MSAA_DISABLED
 
 func apply_options(resize := false) -> void:
 	write_json("reglages",opt)
@@ -161,7 +162,7 @@ func base_water_y() -> float:
 	var a=db.zones[i]
 	var b=db.zones[i+1] if i<5 else {"units":db.basin_units,"water":db.last_water}
 	var t=clampf((volume_base()-float(a.units))/(float(b.units)-float(a.units)),0,1)
-	return lerpf(float(a.water),float(b.water),t)
+	return lerpf(float(a.water),float(b.water),t if i==5 else t*.72)
 
 func water_y() -> float:
 	var dryness=clampf((1.0-float(p.drained)/total())*7.0,0,1)
@@ -273,3 +274,8 @@ func number(value: float) -> String:
 
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST and run_active: save_now()
+
+func photo_folder()->String:
+	var path=ProjectSettings.globalize_path(storage+"Photos/")
+	DirAccess.make_dir_recursive_absolute(path)
+	return path

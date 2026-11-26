@@ -1,0 +1,172 @@
+name: Construire et publier SPOONFUL
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Game/**
+      - Tools/**
+      - Packaging/**
+      - .github/workflows/release.yml
+
+permissions:
+  contents: read
+concurrency:
+  group: spoonful-release
+  cancel-in-progress: false
+env:
+  VERSION: 1.0.0
+
+jobs:
+  build:
+    name: Parcours 3D et exports
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer Godot et les outils
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nsis xvfb xauth libgl1-mesa-dri
+          bash Tools/engine.sh "$RUNNER_TEMP/engine"
+          echo "$RUNNER_TEMP/engine" >> "$GITHUB_PATH"
+      - name: Tester la partie avec rendu OpenGL
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          SPOONFUL_QA_DIR: ${{ runner.temp }}/photos
+        run: |
+          godot --headless --editor --path Game --import
+          xvfb-run -a -s "-screen 0 1280x720x24" timeout 200 godot --rendering-method gl_compatibility --audio-driver Dummy --path Game -- --spoonful-test --screenshots 2>&1 | tee "$RUNNER_TEMP/visuel.log"
+          python3 Tools/verify_result.py "$SPOONFUL_QA_DIR/result.json"
+          if grep -E '(SCRIPT ERROR|SHADER ERROR|SPOONFUL CHECK)' "$RUNNER_TEMP/visuel.log"; then exit 1; fi
+      - name: Exporter puis tester le paquet Linux
+        run: |
+          mkdir -p build/{windows,macos,linux,installers}
+          godot --headless --path Game --export-release Windows "$PWD/build/windows/SPOONFUL.exe"
+          godot --headless --path Game --export-release macOS "$PWD/build/macos/SPOONFUL.zip"
+          godot --headless --path Game --export-release Linux "$PWD/build/linux/SPOONFUL.x86_64"
+          export SPOONFUL_QA_DIR="$RUNNER_TEMP/qa-linux"
+          timeout 90 build/linux/SPOONFUL.x86_64 --headless --audio-driver Dummy -- --spoonful-test
+          python3 Tools/verify_result.py "$SPOONFUL_QA_DIR/result.json"
+          tar -C build/linux -czf "build/installers/Spoonful-$VERSION-Linux-x86_64.tar.gz" SPOONFUL.x86_64 SPOONFUL.pck
+          makensis -V2 "-DVERSION=$VERSION" "-DINPUT=$PWD/build/windows" "-DOUTPUT=$PWD/build/installers/Spoonful-$VERSION-Windows-Setup.exe" Packaging/windows.nsi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop
+          path: build/installers/*
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-app
+          path: build/macos/SPOONFUL.zip
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: captures-et-parcours
+          path: ${{ runner.temp }}/photos/
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Installer et jouer sous Windows
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop
+          path: installers
+      - shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Get-ChildItem installers -Filter '*.exe').FullName
+          $p = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installation $($p.ExitCode)" }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs/SPOONFUL'
+          $exe = Join-Path $dir 'SPOONFUL.exe'
+          $pck = Join-Path $dir 'SPOONFUL.pck'
+          if (!(Test-Path $exe) -or !(Test-Path $pck)) { throw 'Installation incomplète' }
+          $env:SPOONFUL_QA_DIR = Join-Path $env:RUNNER_TEMP 'qa-win'
+          $game = Start-Process -FilePath $exe -ArgumentList '--headless','--audio-driver','Dummy','--','--spoonful-test' -PassThru
+          if (!$game.WaitForExit(120000)) { $game.Kill(); throw 'Le jeu ne répond pas' }
+          if ($game.ExitCode -ne 0) { throw "Jeu $($game.ExitCode)" }
+          python Tools/verify_result.py (Join-Path $env:SPOONFUL_QA_DIR 'result.json')
+          if ($LASTEXITCODE -ne 0) { throw 'Parcours interrompu' }
+          $save = Join-Path $env:APPDATA 'SPOONFUL/verification/voyage.bak'
+          if (!(Test-Path $save)) { throw 'Copie de la partie introuvable' }
+          Start-Process -FilePath (Join-Path $dir 'Desinstaller.exe') -ArgumentList '/S' -Wait
+          for ($i=0; $i -lt 30 -and (Test-Path $exe); $i++) { Start-Sleep -Seconds 1 }
+          if ((Test-Path $exe) -or !(Test-Path $save)) { throw 'Désinstallation incorrecte' }
+
+  mac:
+    name: Installer et jouer sous macOS
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-app
+          path: export
+      - name: Signer localement et tester le paquet universel
+        run: |
+          mkdir -p staging build/installers
+          ditto -x -k export/SPOONFUL.zip staging
+          app="$PWD/staging/SPOONFUL.app"
+          chmod +x "$app/Contents/MacOS/SPOONFUL"
+          lipo "$app/Contents/MacOS/SPOONFUL" -verify_arch arm64 x86_64
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          pkg="build/installers/Spoonful-$VERSION-macOS.pkg"
+          pkgbuild --component "$app" --install-location /Applications --identifier io.fares1212.spoonful.pkg --version "$VERSION" "$pkg"
+          sudo installer -pkg "$pkg" -target /
+          export SPOONFUL_QA_DIR="$RUNNER_TEMP/qa-mac"
+          /Applications/SPOONFUL.app/Contents/MacOS/SPOONFUL --headless --audio-driver Dummy -- --spoonful-test
+          python3 Tools/verify_result.py "$SPOONFUL_QA_DIR/result.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-installer
+          path: build/installers/*.pkg
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    name: Publier les installateurs vérifiés
+    needs: [windows, mac]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-installer
+          path: dist
+      - name: Créer la release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          (cd dist && sha256sum Spoonful-* > SHA256SUMS.txt)
+          if gh release view "$tag" --json isDraft >/dev/null 2>&1; then
+            target="$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha 2>/dev/null || gh release view "$tag" --json targetCommitish --jq .targetCommitish)"
+            test "$target" = "$GITHUB_SHA" || { echo "Ce numéro appartient déjà à un autre commit."; exit 1; }
+            state="$(gh release view "$tag" --json isDraft --jq .isDraft)"
+            if [ "$state" = "false" ]; then exit 0; fi
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --draft --title "SPOONFUL $VERSION" --notes-file Packaging/release-fr.md
+          fi
+          gh release upload "$tag" dist/* --clobber
+          test "$(gh release view "$tag" --json assets --jq '.assets | length')" = 4
+          gh release edit "$tag" --draft=false --latest

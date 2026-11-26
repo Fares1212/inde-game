@@ -152,15 +152,22 @@ static func owl_shell(parent:Node3D)->Node3D:
 	return n
 
 static func bowl(parent:Node3D,w:float,h:float,length:float,p:Vector3,mat:Color)->Node3D:
-	var v=PackedVector3Array()
-	for j in 16:
-		var a=TAU*j/16.0
-		var b=TAU*(j+1)/16.0
-		var u=Vector3(w*cos(a),h,length*sin(a))
-		var z=Vector3(w*cos(b),h,length*sin(b))
-		v.append_array(PackedVector3Array([Vector3.ZERO,u*0.55+Vector3.DOWN*h*0.28,z*0.55+Vector3.DOWN*h*0.28,u*0.55+Vector3.DOWN*h*0.28,u,z,z,u*0.55+Vector3.DOWN*h*0.28,z*0.55+Vector3.DOWN*h*0.28]))
-	var n=fabric(parent,v,mat)
-	n.position=p
+	var shape=SurfaceTool.new()
+	shape.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for ring in 5:
+		for i in 28:
+			for point in [Vector2(ring,i),Vector2(ring+1,i+1),Vector2(ring+1,i),Vector2(ring,i),Vector2(ring,i+1),Vector2(ring+1,i+1)]:
+				var t=point.x/5.0
+				var a=TAU*point.y/28.0
+				shape.set_normal(Vector3(-2*h*t*cos(a)/w,1,-2*h*t*sin(a)/length).normalized())
+				shape.add_vertex(Vector3(w*t*cos(a),h*t*t,length*t*sin(a)))
+	var n=MeshInstance3D.new()
+	n.mesh=shape.commit()
+	var pigment=paint(mat,.16).duplicate()
+	pigment.cull_mode=BaseMaterial3D.CULL_DISABLED
+	pigment.roughness=.48
+	n.material_override=pigment
+	parent.add_child(n);n.position=p
 	return n
 
 static func tool(parent:Node3D,tier:int)->Node3D:
@@ -171,7 +178,8 @@ static func tool(parent:Node3D,tier:int)->Node3D:
 	var wood=Color("#925f41")
 	match tier:
 		0,1:
-			rod(n,Vector3(0,-0.13,0.12),Vector3(0,0.10,-0.32),0.038 if tier==0 else 0.055,wood if tier==1 else silver)
+			rod(n,Vector3(0,-0.13,0.12),Vector3(0,0.10,-0.32),0.038 if tier==0 else 0.055,wood if tier==1 else Color("#7e8d87"))
+			rod(n,Vector3(0,.080,-.283),Vector3(0,.102,-.335),.046,brass)
 			bowl(n,0.097 if tier==0 else 0.17,0.047 if tier==0 else 0.11,0.15 if tier==0 else 0.18,Vector3(0,0.12,-0.42),silver if tier==0 else brass)
 		2:
 			bowl(n,0.19,0.29,0.19,Vector3(0,-0.21,-0.23),teal)

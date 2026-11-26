@@ -124,7 +124,19 @@ jobs:
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
           pkg="build/installers/Spoonful-$VERSION-macOS.pkg"
-          pkgbuild --component "$app" --install-location /Applications --identifier io.fares1212.spoonful.pkg --version "$VERSION" "$pkg"
+          pkgbuild --analyze --root staging "$RUNNER_TEMP/components.plist"
+          python3 - "$RUNNER_TEMP/components.plist" <<'PYTHON'
+          import plistlib
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          entries = plistlib.loads(path.read_bytes())
+          for component in entries:
+              component["BundleIsRelocatable"] = False
+          path.write_bytes(plistlib.dumps(entries))
+          PYTHON
+          pkgbuild --root staging --component-plist "$RUNNER_TEMP/components.plist" --install-location /Applications --identifier io.fares1212.spoonful.pkg --version "$VERSION" "$pkg"
           sudo installer -pkg "$pkg" -target /
           export SPOONFUL_QA_DIR="$RUNNER_TEMP/qa-mac"
           /Applications/SPOONFUL.app/Contents/MacOS/SPOONFUL --headless --audio-driver Dummy -- --spoonful-test

@@ -1,0 +1,31 @@
+name: Vérifier la progression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Game/Assets/_Project/Scripts/Progression/**'
+      - 'Tests/Balance/**'
+      - '.github/workflows/checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  progression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tester les marées, les achats et le prestige
+        if: ${{ hashFiles('Tests/Balance/Balance.csproj') != '' }}
+        run: dotnet run --project Tests/Balance/Balance.csproj -c Release
+      - name: Relever les modes de compilation configurés
+        env:
+          PERSONAL: ${{ secrets.UNITY_LICENSE != '' && secrets.UNITY_EMAIL != '' && secrets.UNITY_PASSWORD != '' }}
+          SEAT: ${{ secrets.UNITY_SERIAL != '' && secrets.UNITY_EMAIL != '' && secrets.UNITY_PASSWORD != '' }}
+          FLOATING: ${{ secrets.UNITY_LICENSE_SERVER != '' }}
+        run: |
+          if [[ "$PERSONAL" == "true" || "$SEAT" == "true" || "$FLOATING" == "true" ]]; then
+            echo "Unity build credentials configured."
+          else
+            echo "Unity build credentials not configured."
+          fi

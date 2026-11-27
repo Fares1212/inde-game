@@ -20,6 +20,7 @@ var lamp_material:StandardMaterial3D
 var shipwrecks:Array=[]
 var foliage:Array=[]
 var finds:Array=[]
+var saltworks:=preload("res://scripts/saltworks.gd").new()
 var ports:Array=[]
 var huts:Array=[]
 var turbines:Array=[]
@@ -205,13 +206,9 @@ func signpost(p:Vector3,title:String,color:Color)->void:
 
 func make_beach()->void:
 	var dockp=S.place(DOCK.x,DOCK.y)
-	for i in 8:F.piece(self,"box",dockp+Vector3(0,0.07,i*0.29-0.6),Vector3(2.7,0.17,0.268),Color("#ac7950") if i%2 else Color("#b8865c"))
-	for x in [-1.02,1.02]:
-		var post=dockp+Vector3(x,0.63,-0.42)
-		F.piece(self,"tube",post,Vector3(0.20,1.7,0.20),Color("#73664d"))
-	F.piece(self,"box",dockp+Vector3(0,0.69,-0.48),Vector3(1.85,0.18,0.94),Color("#508481"),Vector3(-0.18,0,0))
-	for side in [-1,1]:F.piece(self,"box",dockp+Vector3(side*0.89,0.82,-0.48),Vector3(0.1,0.33,0.97),Color("#4e7773"))
-	signpost(dockp+Vector3(-1.9,0,0.1),"DÉVERSOIR",Color("#365d58"))
+	add_child(saltworks)
+	saltworks.position=dockp
+	saltworks.build()
 	var shop=F.root(self,S.place(SHOP.x,SHOP.y))
 	Craft.stall(shop)
 	crab=F.owl_shell(shop)
@@ -244,9 +241,16 @@ func make_beach()->void:
 		var q:Vector2=PORTS[j]
 		var at=S.place(q.x,q.y)
 		var pipe=F.root(self,at)
-		F.piece(pipe,"tube",Vector3(0,0.30,0),Vector3(0.37,0.92,0.37),Color("#4c7773"))
-		F.piece(pipe,"ring",Vector3(0,0.79,0),Vector3(0.76,0.24,0.76),Color("#c08e52"))
-		F.rod(pipe,Vector3(0,0.12,0),previous-at+Vector3(0,0.10,0),0.18,Color("#527979"))
+		Craft.crate(pipe,Vector3(.47,0,-.08),.68)
+		F.rod(pipe,Vector3(0,.14,0),Vector3(0,.68,0),.26,Color("#8f6350"))
+		saltworks.intake(pipe,Vector3(0,.94,0))
+		var outlet:Vector3=previous-at+Vector3(0,.18,0)
+		F.rod(pipe,Vector3(0,.18,0),outlet,.22,Color("#608c83"))
+		var direction:Vector3=outlet-Vector3(0,.18,0)
+		for k in 4:
+			var pt:=Vector3(0,.18,0)+direction*((k+.5)/4.)
+			var axis:=direction.normalized()*.035
+			F.rod(pipe,pt-axis,pt+axis,.266,Color("#b88954"))
 		ports.append(pipe)
 		previous=at
 	for i in 5:
@@ -277,50 +281,38 @@ func make_props()->void:
 		var pos=S.place(cos(a)*r,sin(a)*r)
 		var boat=F.boat(self,pos,2.1+fmod(i*0.7,2.7),[Color("#6d5649"),Color("#825947"),Color("#497270")][i%3],i%4!=2)
 		boat.rotation.y=a+0.4
-		shipwrecks.append({"node":boat,"floor":pos.y,"phase":a,"s":boat.scale.x})
+		shipwrecks.append({"outline":hull_outline(boat),"node":boat,"floor":pos.y,"phase":a,"s":boat.scale.x})
 	for i in 15:
 		var a=0.25+i*2.40
 		var r=8+fmod(i*3.61,20)
 		var n=F.piece(self,"box",S.place(cos(a)*r,sin(a)*r,0.03),Vector3(2.05,.14,2.05),Color("#84a6a0") if i%2 else Color("#adb5a0"),Vector3(0,a,0))
 		n.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-func model_find(parent:Node3D,kind:int)->void:
-	var shape=Voyage.db.finds[kind].shape
-	var cor=Color("#e69474");var gold=Color("#dfb562");var mint=Color("#76babe")
-	match shape:
-		"shell","coral","comb":
-			var base=Color("#edbd94") if shape=="shell" else cor
-			var ct=5 if shape=="shell" else 4
-			for i in ct:
-				var a=(i-(ct-1)*0.5)*0.40
-				F.piece(parent,"rock",Vector3(sin(a)*0.17,0.1+cos(a)*0.09,0),Vector3(0.10,0.43,0.16),base,Vector3(0.12,0,-a))
-		"toy":F.boat(parent,Vector3(0,.1,0),.29,Color("#ae6b43"))
-		"bottle":
-			F.piece(parent,"ball",Vector3(0,0.15,0),Vector3(.25,.41,.25),mint)
-			F.piece(parent,"tube",Vector3(0,.37,0),Vector3(.105,.18,.105),mint)
-			F.piece(parent,"tube",Vector3(0,.48,0),Vector3(.09,.07,.09),gold)
-		"ring","link","key","cup":
-			F.piece(parent,"ring",Vector3(0,.19,0),Vector3(.48,.54,.51),gold if shape!="cup" else mint,Vector3(PI*.35,0,0))
-			if shape=="key":F.rod(parent,Vector3(0,0.15,0),Vector3(.34,0.09,.19),.085,gold)
-			if shape=="cup":F.piece(parent,"taper",Vector3(.15,.15,.02),Vector3(.32,.29,.31),Color("#d8dfc0"))
-		"tile","soap":F.piece(parent,"box",Vector3(0,.075,0),Vector3(.47,.13,.34),Color("#92c1ba") if shape=="tile" else Color("#d9ada1"),Vector3(0.09,.4,.1))
-		"coin":F.piece(parent,"tube",Vector3(0,.08,0),Vector3(.39,.075,.39),gold,Vector3(.16,0,.14),0.28)
-		"bell":F.piece(parent,"taper",Vector3(0,.22,0),Vector3(.39,.42,.39),gold)
-		_:F.piece(parent,"ball",Vector3(0,.22,0),Vector3.ONE*.40,mint,Vector3.ZERO,0.25)
-	F.piece(parent,"rock",Vector3(0,.58,0),Vector3(.065,.17,.065),Color("#f5dc86"))
-
 func make_finds()->void:
 	for reg in 6:
 		for j in 11:
-			var id=reg*16+j
-			var a=PI*.5+(j-5)*.24+rng.randf_range(-.055,.055)
-			var r=RADII[reg]+rng.randf_range(-1.3,1.6)
-			var q=Vector2(cos(a)*r,sin(a)*r)
+			# Historical positions, IDs and RNG draws stay stable for old saves.
+			var a:=PI*.5+(j-5)*.24+rng.randf_range(-.055,.055)
+			var r:float=RADII[reg]+rng.randf_range(-1.3,1.6)
+			var q:=Vector2(cos(a)*r,sin(a)*r)
 			if reg==0 and j<3:q=[Vector2(1.35,77.3),Vector2(-5.5,76.3),Vector2(4.0,75.6)][j]
-			var n=F.root(self,S.place(q.x,q.y,0.04))
-			model_find(n,reg*3+j%3)
-			n.rotation.y=rng.randf()*TAU
-			finds.append({"node":n,"id":id,"kind":reg*3+j%3,"r":reg,"p":n.position})
+			add_find(reg*16+j,reg*3+j%3,q,rng.randf()*TAU)
+	for k in range(18,Voyage.RULES.items.size()):
+		var reg:int=Voyage.RULES.items[k].region
+		for j in 2:
+			var angle:=1.12+float(k%2)*.89+float(j)*.30
+			var r:float=RADII[reg]+1.2-float(j)*.74
+			add_find(1000+k*2+j,k,Vector2(cos(angle),sin(angle))*r,angle+.37*j)
+
+func add_find(id:int,kind:int,point:Vector2,heading:float)->void:
+	var n:=F.root(self,S.place(point.x,point.y,.045))
+	preload("res://scripts/treasure.gd").make(n,Voyage.RULES.items[kind])
+	n.rotation.y=heading
+	finds.append({"node":n,"id":id,"kind":kind,"r":Voyage.RULES.items[kind].region,"p":n.position})
+
+func can_take(entry:Dictionary)->bool:
+	var item:ItemData=Voyage.RULES.items[entry.kind]
+	return Voyage.p.peak>=item.reveal_ml and entry.p.y>=Voyage.water_y()-.10 and not Voyage.p.taken.has(str(entry.id)) and not (entry.kind==16 and Voyage.p.seen.has(item.id))
 
 func make_plug()->void:
 	plug=F.root(self,S.place(0,0,0.1))
@@ -420,12 +412,13 @@ func refresh()->void:
 	for rotor in turbines:rotor.get_parent().visible=int(Voyage.p.tier)>=4
 	water.position.y=Voyage.water_y()
 	for find in finds:
-		find.node.visible=find.r<=current_region and not (find.kind==16 and Voyage.p.seen.has("find_16")) and not Voyage.p.taken.has(str(find.id)) and find.p.y>water.position.y-.57
+		find.node.visible=can_take(find)
 	plug.visible=current_region==5
 	active_tier=Voyage.p.tier
 
 func animate(dt:float,ending:float=-1.0)->void:
 	elapsed+=dt
+	saltworks.advance(dt)
 	var y=Voyage.water_y()
 	water.position.y=y
 	sea.set_shader_parameter("sea_level",y);sea.set_shader_parameter("clock",elapsed)
@@ -475,3 +468,36 @@ func animate(dt:float,ending:float=-1.0)->void:
 		plug.position.y=-11.7+sin(t*PI)*4.0
 		chain.rotation.z=sin(ending*1.8)*.027
 		sea.set_shader_parameter("whirl",sin(t*PI)*1.3)
+
+static func hull_outline(boat:Node3D)->PackedVector2Array:
+	# Use the same cross sections as the rendered hull, projected onto the sea.
+	var outline:=PackedVector2Array()
+	for v in [Vector2(-1.,-.015),Vector2(-.65,-.27),Vector2(.05,-.36),Vector2(.67,-.259),Vector2(1.,-.009),Vector2(1.,.009),Vector2(.67,.259),Vector2(.05,.36),Vector2(-.65,.27),Vector2(-1.,.015)]:
+		outline.append(Vector2(boat.position.x,boat.position.z)+(v*boat.scale.x).rotated(-boat.rotation.y))
+	return outline
+
+func slide_past_boats(start:Vector3,desired:Vector3)->Vector3:
+	const RADIUS:=.39
+	var at:=Vector2(start.x,start.z)
+	var motion:=Vector2(desired.x-start.x,desired.z-start.z)
+	var pieces:=maxi(1,ceili(motion.length()/.20))
+	for step in pieces:
+		at+=motion/pieces
+		for boat in shipwrecks:
+			var center:Vector3=boat.node.position
+			if at.distance_squared_to(Vector2(center.x,center.z))>pow(float(boat.s)+.8,2):continue
+			var poly:PackedVector2Array=boat.outline
+			var best:=INF
+			var near:=at
+			var outward:=Vector2.RIGHT
+			for i in poly.size():
+				var a:=poly[i];var b:=poly[(i+1)%poly.size()]
+				var edge:=Geometry2D.get_closest_point_to_segment(at,a,b)
+				var dist:=edge.distance_squared_to(at)
+				if dist<best:
+					best=dist;near=edge;outward=Vector2(b.y-a.y,a.x-b.x).normalized()
+			var inside:=Geometry2D.is_point_in_polygon(at,poly)
+			if inside or best<RADIUS*RADIUS:
+				var normal:Vector2=(at-near).normalized() if not inside and best>.000001 else outward
+				at=near+normal*(RADIUS+.001)
+	return Vector3(at.x,desired.y,at.y)

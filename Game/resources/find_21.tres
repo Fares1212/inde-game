@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_21"
+journal_id = 21
+title = "Broche hippocampe"
+region = 1
+value = 28
+shape = "brooch"
+lore = "La queue de cuivre se referme sur une petite épingle."
+rarity = "Précieux"
+reveal_ml = 34000000.0
+story_page = false

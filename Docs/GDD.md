@@ -1,6 +1,6 @@
 # La crique des objets perdus
 
-Une seule mer de 500 000 litres. Le fond descend du lagon jusqu’à la fosse en passant par le récif, la forêt de varech, les épaves et la plaine abyssale. Grâce au siphon installé par Bernard, une petite quantité d’eau entraîne un volume supérieur. Le nombre de litres dans la main et la baisse globale gardent chacun leur jauge et leur unité.
+Une seule mer de 500 000 litres. Le fond descend du lagon jusqu’à la fosse en passant par le récif, la forêt de varech, les épaves et la plaine abyssale. Grâce au siphon installé par Bernard, le puisage entraîne un volume supérieur vers les salines. Le changement de niveau est enregistré au puisage. Le déversoir paie les livraisons. Les salines retiennent de la saumure qui s’évapore et le trop-plein rejoint leur évacuation.
 
 | Récipient | Capacité | Geste |
 |---|---:|---|

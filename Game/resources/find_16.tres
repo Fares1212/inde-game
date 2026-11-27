@@ -11,3 +11,4 @@ lore = "Une dent tordue et un ruban bleu. Bernard porte encore la marque du ruba
 id = "find_16"
 journal_id = 16
 rarity = "Insolite"
+reveal_ml = 452000000.0

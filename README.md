@@ -2,15 +2,21 @@
 
 Bernard te prête la cuillère de son café. Tu rapportes cinq millilitres au déversoir. Un petit « plic » résonne au bout du quai. Plus tard, sous une épave, tu reconnaîtras la couleur d’une fenêtre dont le crabe parle parfois.
 
-**[Installer SPOONFUL 2.0.0 pour Windows 10/11 x64](https://github.com/Fares1212/inde-game/releases/download/v2.0.0/Spoonful-2.0.0-Windows-Setup.exe)** · [Versions macOS et Linux](https://github.com/Fares1212/inde-game/releases/tag/v2.0.0)
+**[Installer SPOONFUL 2.1.0 pour Windows 10/11 x64](https://github.com/Fares1212/inde-game/releases/download/v2.1.0/Spoonful-2.1.0-Windows-Setup.exe)** · [Versions macOS et Linux](https://github.com/Fares1212/inde-game/releases/tag/v2.1.0)
 
 ![La crique vue de la plage au début de la partie](Docs/Images/crique-v2.jpg)
 
 ## La première marée
 
-Marche jusqu’à l’écume et clique pour remplir la cuillère. Suis le déversoir sur ta boussole, puis verse avec **E**. Après cinq livraisons, Bernard peut raccorder le siphon pour huit coquilles. Dès lors, chaque récipient versé entraîne davantage d’eau au large. Regarde combien tu portes et combien le siphon retire réellement.
+Au bord de l’écume, clique pour puiser. L’eau quitte la crique au moment où la cuillère se remplit. Marche jusqu’au panneau « ← SALINES » près du comptoir. Appuie sur **E** devant l’entonnoir. L’eau emprunte la rigole en bois, passe devant la roue et tombe dans les bassins de sel. La livraison te rapporte des coquilles.
 
-Surveille la marée, cherche les trouvailles sur la grève et revends-les au comptoir. Tu peux acheter une digue pour protéger ton avance ou un repère de pêche pour retrouver une page manquante. Six régions se découvrent autour de la même mer. À son point le plus bas, tu choisis ce que tu rends à la crique. Le jeu garde un point de retour avant le choix et propose ensuite la promenade libre.
+![L’entonnoir, la rigole et les salines dans le jeu](Docs/Images/salines-21.jpg)
+
+Chez Bernard, les six outils tiennent sur une seule page. Un outil affiche son prix dès que son palier est ouvert. Amorce le siphon après cinq livraisons pour entraîner davantage d’eau à chaque puisage. Dans l’onglet des services, Bernard rachète tes trouvailles et vend des digues ou un repère pour explorer la rive.
+
+![Le comptoir avec la louche en vente et les autres paliers verrouillés](Docs/Images/boutique-21.jpg)
+
+Le carnet rassemble 30 types de trouvailles. La première coquille peut se découvrir après 5 mL retirés. Plus loin, une huître cache une perle, les épaves abritent une longue-vue, et la fosse garde un diadème de 720 coquilles. Il faut atteindre le seuil de retrait et pouvoir toucher l’objet découvert sur la grève. Les 18 pages du récit et la clé de Bernard gardent leur rôle dans les trois fins de la même mer.
 
 ![Les six récipients photographiés depuis la caméra du joueur](Docs/Images/outils-v2.jpg)
 
@@ -22,7 +28,8 @@ Surveille la marée, cherche les trouvailles sur la grève et revends-les au com
 | E | Verser, ramasser ou parler |
 | J, Échap | Ouvrir le carnet ou la pause |
 | Tab | Avancer la réplique de Bernard |
-| F2, F12 | Masquer l’interface ou prendre une photo |
+| F2 | Ouvrir le menu de triche avec le code 1201 |
+| F4, F12 | Masquer l’interface ou prendre une photo |
 | F3 | Afficher les débits du siphon et de la marée |
 | Manette | Sticks pour marcher et regarder, RB pour puiser, X pour interagir |
 

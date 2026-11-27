@@ -11,3 +11,4 @@ lore = "Le creux de ses branches garde un peu de la dernière pluie."
 id = "find_03"
 journal_id = 3
 rarity = "Courant"
+reveal_ml = 5000000.0

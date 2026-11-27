@@ -11,3 +11,4 @@ lore = "Les algues ont poussé dans le sens des dents."
 id = "find_06"
 journal_id = 6
 rarity = "Courant"
+reveal_ml = 50000000.0

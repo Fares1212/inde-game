@@ -11,3 +11,4 @@ lore = "Trois raies sur la nacre. Bernard les compte avant de payer."
 id = "find_00"
 journal_id = 0
 rarity = "Courant"
+reveal_ml = 5.0

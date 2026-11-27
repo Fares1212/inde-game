@@ -1,5 +1,11 @@
 # Historique
 
+## 2.1.0 · Les salines
+
+Le puisage compte immédiatement dans la mer retirée. La livraison vide le récipient et rémunère le trajet. La goulotte alimente une saline visible sur la plage. Une ancienne cargaison est décomptée une seule fois lors de la reprise.
+
+Le comptoir présente six outils avec illustrations, prix et verrous. Le carnet accueille douze trésors supplémentaires. Trente types d’objets ont leur propre seuil de retrait et se collectent lorsqu’ils émergent. Les onze bateaux bloquent les déplacements dans les deux sens. F2 ouvre le menu protégé par 1201. Le mode photo passe à F4.
+
 ## 2.0.0 · La crique des objets perdus
 
 Une côte, six récipients reconstruits avec un intérieur visible, dix-huit pages dans le carnet et trois fins. Une cuillère contient 5 mL. Le siphon, les digues et les repères de pêche s’achètent chez Bernard. Le jeu conserve le dernier choix pour revisiter les fins.

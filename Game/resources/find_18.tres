@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_18"
+journal_id = 18
+title = "Verre de mer"
+region = 0
+value = 7
+shape = "glass"
+lore = "Un éclat de bouteille poli jusqu’à devenir doux."
+rarity = "Poli"
+reveal_ml = 50000.0
+story_page = false

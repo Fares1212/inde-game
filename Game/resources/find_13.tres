@@ -11,3 +11,4 @@ lore = "Sur cette dalle, le nord s’appelle « chaud » et le sud « froid »."
 id = "find_13"
 journal_id = 13
 rarity = "Insolite"
+reveal_ml = 330000000.0

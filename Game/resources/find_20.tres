@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_20"
+journal_id = 20
+title = "Huître perlière"
+region = 1
+value = 19
+shape = "pearl"
+lore = "La nacre retient une goutte ronde qui refuse de couler."
+rarity = "Précieux"
+reveal_ml = 12000000.0
+story_page = false

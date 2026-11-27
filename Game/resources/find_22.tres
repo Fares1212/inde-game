@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_22"
+journal_id = 22
+title = "Boussole de cabine"
+region = 2
+value = 44
+shape = "compass"
+lore = "Son aiguille tremble toujours vers le vieux quai."
+rarity = "Rare"
+reveal_ml = 67000000.0
+story_page = false

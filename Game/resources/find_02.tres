@@ -11,3 +11,4 @@ lore = "Son message demande de rendre la bouteille au prochain reflux."
 id = "find_02"
 journal_id = 2
 rarity = "Rare"
+reveal_ml = 35.0

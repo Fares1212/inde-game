@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_24"
+journal_id = 24
+title = "Longue-vue en laiton"
+region = 3
+value = 92
+shape = "scope"
+lore = "Le dernier tube porte la marque des doigts du capitaine."
+rarity = "Rare"
+reveal_ml = 192000000.0
+story_page = false

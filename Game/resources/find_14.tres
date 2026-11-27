@@ -11,3 +11,4 @@ lore = "Le bleu de cette tuile revient dans les dessins de la petite maison de B
 id = "find_14"
 journal_id = 14
 rarity = "Rare"
+reveal_ml = 345000000.0

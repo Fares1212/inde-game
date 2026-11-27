@@ -11,3 +11,4 @@ lore = "Elle tient dans ta poche. Sa sœur a la taille d’une place de village.
 id = "find_17"
 journal_id = 17
 rarity = "Rare"
+reveal_ml = 473000000.0

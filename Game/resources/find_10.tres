@@ -11,3 +11,4 @@ lore = "Une anémone habite son cadre comme une vieille dame à la fenêtre."
 id = "find_10"
 journal_id = 10
 rarity = "Insolite"
+reveal_ml = 180000000.0

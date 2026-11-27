@@ -67,12 +67,14 @@ func deliver()->void:
 	seek_water()
 	var old=Voyage.p.drained
 	for j in 16:
-		if Voyage.p.bag>=Voyage.capacity() or Voyage.p.drained+Voyage.p.bag>=Voyage.total():break
+		if Voyage.p.bag>=Voyage.capacity() or Voyage.p.drained>=Voyage.total():break
 		game.throttle=0;game.do_scoop()
 	if not check(Voyage.p.bag>0,"Remplir l’outil "+str(Voyage.p.tier)):return
+	var before_pour:float=Voyage.p.drained
+	check(before_pour>old,"Le volume baisse au puisage")
 	var port=game.first_port();game.player.go(port.x,port.z+.30)
 	game.throttle=0;game.interact()
-	check(Voyage.p.bag==0 and Voyage.p.drained>old,"Livraison créditée")
+	check(Voyage.p.bag==0 and Voyage.p.drained==before_pour and game.world.saltworks.current>0,"Livraison créditée")
 	game.world.refresh()
 
 func loot_for_market()->void:
@@ -117,7 +119,7 @@ func run()->void:
 	check(Voyage.p.tier==0 and Voyage.p.drained==0,"Première cuillère")
 	game.player.go(0,90.4);game.player.yaw=-.12;game.player.pitch=-.095;game.player.orient()
 	game.update_hud();await shot("02-lagon")
-	game.hud.hide();await shot("outil-0-vide");game.player.hand.hide()
+	game.toast_left=0;game.hud.hide();await shot("outil-0-vide");game.player.hand.hide()
 	await shot("00-cote")
 	game.hud.show();game.player.hand.show()
 	var start_z=game.player.position.z
@@ -126,13 +128,29 @@ func run()->void:
 		game.player.move(.016)
 	Input.action_release("forward")
 	check(game.player.position.z<start_z,"Déplacement en vue subjective")
+	game.world.refresh()
+	check(not game.world.finds.any(func(entry):return entry.node.visible),"Objets enfouis au début")
+	test_boats()
+	test_cheats()
 	deliver()
 	if failed:end_test();return
 	check(Voyage.p.drained==5 and Voyage.volume(Voyage.p.drained)=="5 mL","Première cuillère de cinq millilitres")
 	check(game.region_meter.value==Voyage.p.drained/Voyage.total(),"Jauge globale")
-	loot_for_market();shop();game.shop_tab="objects";game.shop_panel(false)
+	check(game.world.finds[0].node.visible and not game.world.finds[1].node.visible,"Première coquille découverte au premier puisage")
+	check(not Voyage.collect(1,1),"Trésor sous le seuil inaccessible")
+	game.player.go(C.DOCK.x-1.80,C.DOCK.y+3.05);aim_at(game.world.saltworks.global_position+Vector3(-1.82,.72,0))
+	DialogueManager.clear();game.toast_left=0;game.hud.hide();game.player.hand.hide();game.world.saltworks.receive();game.world.saltworks.advance(.69)
+	await shot("salines");game.hud.show();game.player.hand.show()
+	loot_for_market();shop()
+	for number in 6:
+		var cell:Button=game.modal.find_child("Tool%d"%number,true,false)
+		check(cell!=null and cell.is_visible_in_tree(),"Les six récipients au comptoir")
+		if number>0:check(cell.disabled and cell.text=="Locked","Verrou visible")
+	await shot("comptoir-locked")
+	game.shop_tab="objects";game.shop_panel(false)
+	var at_sale:float=Voyage.p.drained
 	if Voyage.cargo_value()>0:press(game.modal,"Vendre les trouvailles")
-	check(Voyage.cargo_value()==0,"Besace vendue")
+	check(Voyage.cargo_value()==0 and Voyage.p.drained==at_sale,"La vente ne retire aucune eau")
 	game.close_panel();game.shop_tab="vessels"
 	while Voyage.p.drops<8:deliver()
 	shop();press(game.modal,"Amorcer le siphon");game.close_panel()
@@ -143,7 +161,11 @@ func run()->void:
 		Voyage.p.drained=v.gate*Voyage.total();Voyage.p.peak=Voyage.p.drained;Voyage.p.coins=v.price-1
 		check(not Voyage.buy(),"Solde insuffisant")
 		Voyage.p.coins=v.price
-		shop();press(game.modal,"Acheter cet outil");game.close_panel()
+		shop()
+		if i==1:await shot("comptoir-prix")
+		var control:Button=game.modal.find_child("Tool%d"%i,true,false)
+		check(control!=null and not control.disabled and control.text.contains(str(v.price)),"Prix d’achat affiché")
+		control.pressed.emit();game.close_panel()
 		check(Voyage.p.tier==i and is_instance_valid(game.player.liquid),"Récipient ouvert et eau du modèle")
 		game.player.kick=0;game.player.swing=1
 		game.player.go(0,82);game.player.yaw=0;game.player.pitch=-.46 if i==5 else -.16;game.player.orient()
@@ -168,7 +190,7 @@ func run()->void:
 				if not found.node.visible or Voyage.p.seen.has(Voyage.db.finds[found.kind].id):continue
 				game.player.go(found.p.x,found.p.z+.16);aim_at(found.p+Vector3.UP*.2)
 				game.throttle=0;game.interact()
-			check(Voyage.p.seen.size()==18,"Les 18 pages peuvent être ramassées sur le terrain")
+			check(Voyage.p.seen.size()==30,"Les 30 trouvailles peuvent être ramassées sur le terrain")
 			shop();game.shop_tab="objects";game.shop_panel(false)
 			if Voyage.cargo_value()>0:press(game.modal,"Vendre les trouvailles")
 			check(Voyage.p.cargo.has("find_16"),"La clé reste dans la besace après la vente")
@@ -187,6 +209,10 @@ func run()->void:
 		check(not Voyage.p.finished and Voyage.plug_ready() and Voyage.p.endings.has(k),"Reprise du choix sur la même mer")
 	check(Voyage.p.endings.size()==3,"Trois fins sur une côte")
 	var legacy={"schema":1,"tier":2,"basin":1,"drained":77500000.0,"bag":46900.0,"coins":81,"seen":{"2":true},"cargo":{"2":1},"taken":{"2":true}}
+	var old_v2:=Voyage.blank()
+	old_v2.schema=2;old_v2.drained=100.;old_v2.bag=5.
+	var v3:=Voyage.restore_state(old_v2)
+	check(v3.schema==3 and v3.drained==105. and v3.bag==5. and Voyage.restore_state(v3).drained==105.,"Migration unique de la cargaison V2")
 	var migrated:=Voyage.migrate(legacy)
 	check(is_equal_approx(migrated.drained/Voyage.total(),.5) and migrated.seen.has("find_02") and migrated.coins==81 and migrated.bag==4250,"Migration de progression V1")
 	game.pause_panel();press(game.modal,"Réglages");press(game.modal,"Enregistrer et revenir");check(game.screen=="pause","Réglages")
@@ -194,3 +220,33 @@ func run()->void:
 	var damaged=FileAccess.open(Voyage.storage+Voyage.SAVE_NAME+".json",FileAccess.WRITE);damaged.store_string("{");damaged.close()
 	check(Voyage.continue_run() and Voyage.p.endings.size()==3,"Sauvegarde de secours")
 	end_test()
+
+func test_boats()->void:
+	for dry in [false,true]:
+		Voyage.p.drained=Voyage.total() if dry else 0.
+		game.world.animate(.016)
+		for vessel in game.world.shipwrecks:
+			var boat:Node3D=vessel.node
+			var center:=Vector2(boat.position.x,boat.position.z)
+			# Approach port and starboard while holding the normal forward control.
+			for side in [-1.,1.]:
+				var from:=center+Vector2(0,side*(float(vessel.s)*.45+1.2)).rotated(-boat.rotation.y)
+				game.player.go(from.x,from.y);game.player.motion=Vector2.ZERO
+				game.player.yaw=atan2(from.x-center.x,from.y-center.y);game.player.orient()
+				Input.action_press("forward")
+				for step in 55:game.player.move(.035)
+				Input.action_release("forward")
+				var end:=Vector2(game.player.position.x,game.player.position.z)
+				check((end-center).dot(from-center)>0 and not Geometry2D.is_point_in_polygon(end,vessel.outline),"Coque solide des deux côtés, mer basse ou haute")
+	Voyage.p.drained=0.;Voyage.p.peak=0.;game.world.refresh()
+
+func test_cheats()->void:
+	var input:=InputEventKey.new();input.physical_keycode=KEY_F1;input.pressed=true
+	game._unhandled_input(input);check(game.screen=="","F1 ne contourne pas le code")
+	input.physical_keycode=KEY_F4;game._unhandled_input(input);check(game.photo,"F4 active le mode photo");game._unhandled_input(input)
+	input.physical_keycode=KEY_F2;game._unhandled_input(input)
+	check(game.screen=="code","F2 ouvre la saisie du code")
+	var entry:LineEdit=game.modal.find_child("CheatCode",true,false)
+	entry.text="1200";entry.text_submitted.emit(entry.text);check(game.screen=="code" and not game.cheat_access,"Mauvais code refusé")
+	entry.text="1201";entry.text_submitted.emit(entry.text);check(game.screen=="debug" and game.cheat_access,"Code 1201 reconnu")
+	press(game.modal,"Revenir au jeu");game.debug_panel();check(game.screen=="","Fermeture relocke le menu")

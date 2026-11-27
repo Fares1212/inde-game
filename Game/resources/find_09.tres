@@ -11,3 +11,4 @@ lore = "Elle annonce une arrivée au lieu d’un naufrage."
 id = "find_09"
 journal_id = 9
 rarity = "Courant"
+reveal_ml = 160000000.0

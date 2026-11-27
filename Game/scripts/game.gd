@@ -40,6 +40,8 @@ var compass:Label
 var flash:ColorRect
 var multiplier:=1.0
 var action_target:Dictionary={}
+var cheat_access:=false
+var toast_layer:CanvasLayer
 var playing:=false
 var finale_card:=false
 var shop_tab:="vessels"
@@ -96,13 +98,17 @@ func make_hud()->void:
 	UI.pad(target,-345,-129,345,-92);target.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	help=UI.text(hud,"",15,UI.IVORY);help.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);UI.pad(help,-338,-67,338,-21);help.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	for l in [compass,target,help,cross]:l.add_theme_color_override("font_color",UI.IVORY);l.add_theme_constant_override("outline_size",6);l.add_theme_color_override("font_outline_color",Color("#193c43"))
-	message_panel=UI.card(hud,Color(.09,.22,.23,.94),UI.GOLD);message_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);UI.pad(message_panel,-279,66,279,117)
-	message=UI.text(message_panel,"",16,UI.IVORY);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;message_panel.hide()
+	toast_layer=CanvasLayer.new();toast_layer.layer=15;add_child(toast_layer)
+	var notice_root:=Control.new();toast_layer.add_child(notice_root);UI.wide(notice_root);notice_root.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	message_panel=PanelContainer.new();notice_root.add_child(message_panel);message_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	message_panel.add_theme_stylebox_override("panel",UI.box_style(Color("#234642ec"),Color("#b6a078"),5,1))
+	message_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT);UI.pad(message_panel,-290,-75,-18,-20)
+	message=UI.text(message_panel,"",16,UI.IVORY);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;message.add_theme_color_override("font_color",UI.PAPER);message_panel.hide()
 	subtitle=UI.text(hud,"",17,UI.IVORY);subtitle.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);UI.pad(subtitle,-360,-195,360,-138);subtitle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;subtitle.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_constant_override("outline_size",5);subtitle.add_theme_color_override("font_outline_color",UI.DEEP)
 
 func notify_text(s:String,seconds:=3.1)->void:
-	message.text=s;message_panel.show();toast_left=seconds
+	message.text=s;message_panel.visible=not photo;toast_left=seconds
 
 func say(k:String)->void:
 	DialogueManager.say(str(Voyage.db.voices[k]),2 if k in ["empty","plug"] else 0)
@@ -115,7 +121,7 @@ func panel(kind:String,title:String,small:String,w:=620,h:=555)->Dictionary:
 func close_panel()->void:
 	DialogueManager.clear()
 	if is_instance_valid(modal):modal.hide();modal.queue_free()
-	modal=null;screen=""
+	modal=null;screen="";cheat_access=false
 	canvas.visible=true
 	hud.visible=not photo
 	capture_mouse();update_hud()
@@ -146,7 +152,7 @@ func album_panel()->void:
 
 func controls_panel()->void:
 	var m=panel("controls","Commandes","SPOONFUL",584,515)
-	for row in ["ZQSD, WASD ou flèches     Marcher","Souris     Regarder","Clic gauche     Puiser ou actionner l’outil","E     Vendre, verser, ramasser ou tirer la Bonde","Maj / Espace     Courir / sauter","J     Carnet des 18 trouvailles","F2     Mode photo libre du HUD","F12     Enregistrer une photo PNG","F3     Débits et marée","Tab / clic stick droit     Avancer le dialogue","Manette     Sticks : marche / regard, X : interagir, RB : puiser","Échap     Pause ou retour"]:
+	for row in ["ZQSD, WASD ou flèches     Marcher","Souris     Regarder","Clic gauche     Puiser ou actionner l’outil","E     Vendre, verser, ramasser ou tirer la Bonde","Maj / Espace     Courir / sauter","J     Carnet des trouvailles","F2     Menu de triche par code","F4     Mode photo libre du HUD","F12     Enregistrer une photo PNG","F3     Débits et marée","Tab / clic stick droit     Avancer le dialogue","Manette     Sticks : marche / regard, X : interagir, RB : puiser","Échap     Pause ou retour"]:
 		UI.text(m.body,row,16,UI.IVORY)
 	UI.button(m.footer,"Retour",pause_panel,true).grab_focus()
 
@@ -160,7 +166,7 @@ func return_menu()->void:
 	Voyage.run_active=false;playing=false;get_tree().change_scene_to_file("res://scenes/Menu.tscn")
 
 func book_panel()->void:
-	var m=panel("book","Carnet de la grève",str(Voyage.p.seen.size())+" / 18 pages",755,596)
+	var m=panel("book","Carnet de la grève",str(Voyage.p.seen.size())+" / "+str(Voyage.RULES.items.size())+" trouvailles",755,596)
 	var opening:=UI.hbox(m.body,18)
 	var plate:=TextureRect.new()
 	plate.texture=load("res://art/carnet-bernard.jpg")
@@ -184,46 +190,51 @@ func book_panel()->void:
 	else:
 		for r in 6:
 			UI.text(m.body,Voyage.db.zones[r].title,23,UI.GOLD,true)
-			for j in 3:
-				var item:ItemData=Voyage.db.finds[r*3+j]
+			for item:ItemData in Voyage.RULES.items:
+				if item.region!=r:continue
 				var seen:bool=Voyage.p.seen.has(item.id)
 				var row=UI.hbox(m.body,8)
-				var icon:=TextureRect.new();icon.texture=load("res://art/ui/item_%02d.svg"%item.journal_id);icon.custom_minimum_size=Vector2(40,40);icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+				var icon:=TextureRect.new();icon.texture=UI.atlas_tile(preload("res://art/market/trouvailles.png"),item.journal_id,6,160);icon.custom_minimum_size=Vector2(40,40);icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 				if not seen:icon.modulate=Color("#363c3b")
 				row.add_child(icon);UI.text(row,item.title+"  ·  "+item.rarity if seen else "Encore sous la marée",18)
 				if seen:UI.copy(m.body,item.lore,18)
 	UI.button(m.footer,"Fermer le carnet",close_panel,true).grab_focus()
 
-func shop_panel(greeting:=true)->void:
-	var m=panel("shop","Chez Bernard",Voyage.number(Voyage.p.coins)+" coquilles",680,505)
-	# Keep the dialogue ribbon below the shop instead of obscuring its buttons.
-	var sheet:Control=m.root.get_child(0);sheet.offset_top-=60;sheet.offset_bottom-=60
-	var tabs=UI.hbox(m.body,9)
-	UI.button(tabs,"Récipients",func():shop_tab="vessels";shop_panel(false),shop_tab=="vessels")
-	UI.button(tabs,"Objets et digues",func():shop_tab="objects";shop_panel(false),shop_tab=="objects")
+func shop_panel(_greeting:=true)->void:
+	DialogueManager.clear()
+	if is_instance_valid(modal):modal.hide();modal.queue_free()
+	screen="shop";Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;hud.hide()
+	var market=preload("res://scripts/market.gd")
+	var m:Dictionary=market.page(root,Voyage.number(Voyage.p.coins));modal=m.root
+	var tools_tab:=UI.button(m.tabs,"Les six outils",func():shop_tab="vessels";shop_panel(false),shop_tab=="vessels")
+	var goods_tab:=UI.button(m.tabs,"Trouvailles et services",func():shop_tab="objects";shop_panel(false),shop_tab=="objects")
 	if shop_tab=="vessels":
+		tools_tab.grab_focus()
+		var grid:=GridContainer.new();grid.columns=3;grid.add_theme_constant_override("h_separation",10);grid.add_theme_constant_override("v_separation",8);m.body.add_child(grid)
+		for i in Voyage.RULES.vessels.size():
+			var v:VesselData=Voyage.RULES.vessels[i]
+			var owned:bool=i<=int(Voyage.p.tier)
+			var open:bool=i==int(Voyage.p.tier)+1 and Voyage.p.primer and Voyage.p.peak>=v.gate*Voyage.total()
+			var state:="Équipé" if i==int(Voyage.p.tier) else ("Acquis" if owned else (Voyage.number(v.price)+" coq." if open else "Locked"))
+			var reason:=v.description if owned else ("Siphon requis" if not Voyage.p.primer else "Outil précédent et "+Voyage.percent(v.gate)+" de mer retirée")
+			if open:reason="Acheter" if Voyage.p.coins>=v.price else "Il manque "+str(v.price-Voyage.p.coins)+" coquilles"
+			market.tile(grid,v,i,state,open and Voyage.p.coins>=v.price,reason,buy_vessel.bind(i))
 		if not Voyage.p.primer:
-			UI.text(m.body,"Le petit siphon",25,UI.GOLD,true)
-			UI.copy(m.body,"Après cinq livraisons, Bernard raccorde ta goulotte au siphon de la crique. Chaque récipient versé entraîne alors l’eau au large.")
-			var prime=UI.button(m.body,"Amorcer le siphon  ·  8 coquilles",func():
-				if Voyage.buy_primer():say("buy");Sound.effect("buy");shop_panel(false))
+			var line:=UI.hbox(m.body,12)
+			var info:=UI.text(line,"Siphon  ·  %d / 5 livraisons"%mini(5,Voyage.p.drops),17);info.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			var prime:=UI.button(line,"Amorcer le siphon  ·  8 coq.",func():
+				if Voyage.buy_primer():Sound.effect("buy");shop_panel(false);notify_text("Siphon installé",2.))
 			prime.disabled=Voyage.p.coins<Voyage.RULES.primer_price or Voyage.p.drops<5
-		if Voyage.p.tier<5:
-			var v:VesselData=Voyage.db.tools[int(Voyage.p.tier)+1]
-			UI.text(m.body,v.title,26,UI.GOLD,true);UI.copy(m.body,v.description)
-			UI.text(m.body,Voyage.volume(v.capacity)+"   ·   "+Voyage.number(v.price)+" coquilles",21)
-			var status:=Voyage.upgrade_status()
-			if status!="":UI.copy(m.body,status,17)
-			var buy=UI.button(m.body,"Acheter cet outil",func():
-				if Voyage.buy():player.rebuild();world.refresh();Sound.effect("buy");say("buy");shop_panel(false)
-			,true);buy.disabled=status!=""
-		else:UI.copy(m.body,"La dernière goulotte mène au vieux treuil. Tu as de quoi aller jusqu’au bout.")
 	else:
+		goods_tab.grab_focus()
+		var scroll:=ScrollContainer.new();scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL;m.body.add_child(scroll)
+		m.body=UI.vbox(scroll,6);m.body.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		var val:=Voyage.cargo_value()
 		for item:ItemData in Voyage.RULES.items:
 			if Voyage.p.cargo.has(item.id):UI.text(m.body,item.title+"   × "+str(Voyage.p.cargo[item.id]),18)
 		var sell=UI.button(m.body,"Vendre les trouvailles  ·  "+str(val)+" coquilles",func():
-			if Voyage.sell()>0:Sound.effect("coin");say("sale");shop_panel(false)
+			var gain:=Voyage.sell()
+			if gain>0:Sound.effect("coin");shop_panel(false);notify_text("+ %d coquilles"%gain,2.)
 		,true);sell.disabled=val<=0
 		if Voyage.p.seen.has("find_16") and not Voyage.p.returned:
 			UI.button(m.body,"Rendre la clé du logis",func():Voyage.return_key();say("home");shop_panel(false))
@@ -236,15 +247,35 @@ func shop_panel(greeting:=true)->void:
 					close_panel();notify_text("Bernard a marqué une trouvaille inconnue sur ta boussole.",4.))
 			order.disabled=Voyage.p.coins<cost
 		var price:int=Voyage.RULES.dike_price*(1+int(Voyage.p.dikes))
-		UI.copy(m.body,"Une digue protège la mer déjà retirée quand la marée remonte.")
+		
 		var d=UI.button(m.body,"Poser une digue  ·  "+str(price)+" coquilles",func():
-			if Voyage.buy_dike():Sound.effect("creak");shop_panel(false))
+			if Voyage.buy_dike():Sound.effect("creak");shop_panel(false);notify_text("Digue installée",2.))
 		d.disabled=Voyage.p.coins<price or Voyage.p.drained<=Voyage.p.locked+.001
-	UI.button(m.footer,"Retour à la plage",close_panel).grab_focus()
-	if greeting:say("shop")
+	UI.button(m.footer,"Retour à la plage",close_panel)
+
+func buy_vessel(index:int)->void:
+	if index!=int(Voyage.p.tier)+1 or not Voyage.buy():return
+	player.rebuild();world.refresh();Sound.effect("buy");shop_panel(false)
+	notify_text("Achat  ·  "+Voyage.vessel().title,2.4)
+
+func cheats_prompt()->void:
+	cheat_access=false;DialogueManager.clear()
+	var m:=panel("code","Menu de triche","Accès par code",425,292)
+	var field:=LineEdit.new();field.name="CheatCode";field.secret=true;field.max_length=4
+	field.placeholder_text="Code à 4 chiffres";field.custom_minimum_size.y=44;m.body.add_child(field)
+	var error:=UI.text(m.body,"",16,UI.GOLD)
+	var unlock:=func():
+		if field.text=="1201":
+			cheat_access=true;debug_panel()
+		else:
+			error.text="Code incorrect";field.clear();field.grab_focus()
+	field.text_submitted.connect(func(_v:String):unlock.call())
+	UI.button(m.footer,"Ouvrir",unlock,true);UI.button(m.footer,"Retour",close_panel)
+	field.grab_focus()
 
 func debug_panel()->void:
-	var m=panel("debug","Outils de développement","F1 · Réglages de la crique",525,520)
+	if not cheat_access:return
+	var m=panel("debug","Menu de triche","La crique",525,520)
 	UI.button(m.body,"Ajouter 100 coquilles",func():Voyage.p.coins+=100;Voyage.save_now();debug_panel())
 	UI.button(m.body,"Débloquer l’outil suivant",func():
 		if Voyage.p.tier<5:Voyage.p.tier+=1;Voyage.save_now();player.rebuild();world.refresh()
@@ -277,7 +308,7 @@ func first_port()->Vector3:
 		var pp:Vector2=Coast.PORTS[i]
 		var dist=pp.distance_to(Vector2(player.position.x,player.position.z))
 		if dist<d:d=dist;best=pp
-	return S.place(best.x,best.y,0.45)
+	return S.place(best.x,best.y,1.29 if best==Coast.DOCK else .94)
 
 func focus()->Dictionary:
 	var pos:Vector3=player.position
@@ -285,7 +316,7 @@ func focus()->Dictionary:
 	var best={"key":"","dist":INF}
 	var facing=-player.cam.global_basis.z
 	for entry in world.finds:
-		if not entry.node.visible:continue
+		if not entry.node.visible or not world.can_take(entry):continue
 		var delta=entry.p+Vector3.UP*.38-player.cam.global_position
 		var dst=q.distance_to(Vector2(entry.p.x,entry.p.z))
 		if dst<=2.75 and dst<best.dist and (delta.normalized().dot(facing)>.13 or dst<1.25):
@@ -315,7 +346,11 @@ func do_scoop()->void:
 		notify_text("Approche le bord de l’eau pour puiser.",1.8);return
 	if Voyage.p.bag>=Voyage.capacity():
 		notify_text("Récipient plein. Dépose l’eau au déversoir indiqué.",2.1);return
-	if Voyage.scoop()>0:
+	var before:float=Voyage.p.drained
+	var carried:=Voyage.scoop()
+	if carried>0:
+		if Voyage.p.drained-before>carried+.01:world.saltworks.receive()
+		world.refresh();update_hud()
 		player.animate_action();world.splash(water);Sound.effect("scoop")
 		throttle=Voyage.vessel().stroke_seconds
 		if Voyage.p.scoops==1:notify_text("Première cuillère pleine. Rejoins le déversoir.",3.6)
@@ -327,14 +362,14 @@ func interact()->void:
 	match dst.key:
 		"shop":shop_panel()
 		"pour":
-			var carried:float=Voyage.p.bag
+			var before_coins:int=Voyage.p.coins
 			var quantity=Voyage.pour()
 			if quantity>0:
-				player.animate_action(1.1);world.pour_arc(player.liquid.global_position, dst.pos+Vector3.UP*.23);Sound.effect("pour");throttle=.30
+				player.animate_action(1.1);world.pour_arc(player.liquid.global_position, dst.pos);world.saltworks.receive();Sound.effect("pour");throttle=.30
 				if Voyage.p.drops==1:
-					say("first");notify_text("Plic !   Une cuillère sur cent millions.",5.0)
+					say("first");notify_text("Plic !  ·  5 mL aux salines",2.5)
 					postcard("Premier-plic")
-				else:notify_text(Voyage.volume(carried)+" versés   ·   "+Voyage.volume(quantity)+" évacués",2.2)
+				else:notify_text(Voyage.volume(quantity)+" aux salines  ·  +"+str(Voyage.p.coins-before_coins)+" coq.",2.0)
 			else:notify_text("Va remplir ton outil au bord de l’eau.",2.1)
 		"find":
 			var e=dst.entry
@@ -391,7 +426,7 @@ func update_hud()->void:
 		var dims:=get_viewport().get_visible_rect().size;target.global_position=Vector2((dims.x-target.size.x)*.5,dims.y*.62)
 	if Voyage.p.free:compass.text="";help.text="Promenade libre   ·   Échap pour retrouver le dernier choix"
 	elif Voyage.plug_ready():compass.text="BONDE  ·  "+heading_to(Vector3.ZERO);help.text="Rejoins le pied de la chaîne pour ouvrir la Bonde."
-	elif Voyage.p.bag>0:compass.text="DÉVERSOIR  ·  "+heading_to(first_port());help.text="Verse ta cargaison avec E au déversoir."
+	elif Voyage.p.bag>0:compass.text="";help.text="Verse avec E à la goulotte des salines." if Voyage.p.drops<2 else ""
 	elif (not Voyage.p.primer and Voyage.p.drops>=5 and Voyage.p.coins>=8) or (int(Voyage.p.tier)<5 and Voyage.upgrade_status()=="") or Voyage.cargo_value()>=8:
 		compass.text="BERNARD  ·  "+heading_to(S.place(Coast.SHOP.x,Coast.SHOP.y));help.text="Rends visite au crabe pour vendre ou changer d’outil."
 	else:
@@ -449,7 +484,7 @@ func finish_panel()->void:
 	UI.copy(m.body,{"tide":"La mer reprend sa place. Sur le comptoir, Bernard pose une deuxième tasse.","empty":"Le vent tourne une page du carnet. La table est mise pour une personne.","home":"La clé est dans la serrure. À côté de toi, une petite pince se repose sur le bois."}.get(k,"Le soir descend."),22)
 	UI.text(m.body,"Un conte de Fares   ·   Godot 4.5.1",19,UI.GOLD,true)
 	UI.copy(m.body,"%s puisages   ·   %s coquilles gagnées   ·   %d h %02d min"%[Voyage.number(Voyage.p.scoops),Voyage.number(Voyage.p.earned),int(Voyage.p.clock/3600),int(Voyage.p.clock/60)%60])
-	UI.copy(m.body,"%d / 18 pages   ·   %d / 3 fins découvertes"%[Voyage.p.seen.size(),Voyage.p.endings.size()])
+	UI.copy(m.body,"%d / %d trouvailles   ·   %d / 3 fins découvertes"%[Voyage.p.seen.size(),Voyage.RULES.items.size(),Voyage.p.endings.size()])
 	if Voyage.p.endings.size()<3:UI.copy(m.body,"Certaines choses du rivage ont encore quelqu’un qui les attend.",17)
 	UI.button(m.body,"Se promener sur la même côte",free_walk,true).grab_focus()
 	UI.button(m.body,"Revenir avant le dernier choix",rewind_choice)
@@ -473,17 +508,20 @@ func postcard(moment:String,delay:=.12)->void:
 func take_photo()->void:
 	if DisplayServer.get_name()=="headless":return
 	var old=hud.visible
+	var old_toast:=toast_layer.visible;toast_layer.hide()
 	hud.hide()
 	await RenderingServer.frame_post_draw
 	var img=get_viewport().get_texture().get_image()
 	var folder=Voyage.photo_folder()
 	var name="Crique-%s.png"%Time.get_datetime_string_from_system().replace(":","-")
 	var ok=img.save_png(folder.path_join(name))
-	hud.visible=old
+	hud.visible=old;toast_layer.visible=old_toast
 	if ok==OK:notify_text("Photo enregistrée dans le dossier Photos de SPOONFUL.",3.0)
 
 func _process(dt:float)->void:
 	if not playing:return
+	toast_left=maxf(0,toast_left-dt)
+	message_panel.visible=toast_left>0 and not photo and finale<0 and screen in ["","shop"]
 	throttle=maxf(0,throttle-dt);flash.color.a=move_toward(flash.color.a,0,dt*.8)
 	if finale>=0:
 		finale+=dt
@@ -510,8 +548,6 @@ func _process(dt:float)->void:
 			Sound.effect("creak");postcard("Les-epaves",1.3)
 	timer+=dt
 	if timer>.12:timer=0;update_hud()
-	toast_left=maxf(0,toast_left-dt)
-	if toast_left<=0:message_panel.hide()
 	caption_left=maxf(0,caption_left-dt)
 	if caption_left<=0:subtitle.text=""
 	var look=player.faces_sun()
@@ -541,7 +577,7 @@ func _unhandled_input(e:InputEvent)->void:
 	if e.is_action_pressed("ui_cancel"):pause_panel()
 	elif e.is_action_pressed("journal"):book_panel()
 	elif e is InputEventKey and e.pressed and e.physical_keycode==KEY_F3:diagnostic=not diagnostic;update_hud()
-	elif e.is_action_pressed("debug_menu"):debug_panel()
+	elif e.is_action_pressed("cheats"):cheats_prompt()
 	elif e.is_action_pressed("photo"):
 		photo=not photo;hud.visible=not photo;player.hand.visible=not photo
 	elif e is InputEventKey and e.pressed and not e.echo and e.physical_keycode==KEY_F12:take_photo()

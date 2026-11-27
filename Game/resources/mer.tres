@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=26 format=3]
+[gd_resource type="Resource" load_steps=38 format=3]
 [ext_resource type="Script" path="res://resources/sea_rules.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/teaspoon.tres" id="r0"]
 [ext_resource type="Resource" path="res://resources/ladle.tres" id="r1"]
@@ -24,8 +24,20 @@
 [ext_resource type="Resource" path="res://resources/find_15.tres" id="r21"]
 [ext_resource type="Resource" path="res://resources/find_16.tres" id="r22"]
 [ext_resource type="Resource" path="res://resources/find_17.tres" id="r23"]
+[ext_resource type="Resource" path="res://resources/find_18.tres" id="r24"]
+[ext_resource type="Resource" path="res://resources/find_19.tres" id="r25"]
+[ext_resource type="Resource" path="res://resources/find_20.tres" id="r26"]
+[ext_resource type="Resource" path="res://resources/find_21.tres" id="r27"]
+[ext_resource type="Resource" path="res://resources/find_22.tres" id="r28"]
+[ext_resource type="Resource" path="res://resources/find_23.tres" id="r29"]
+[ext_resource type="Resource" path="res://resources/find_24.tres" id="r30"]
+[ext_resource type="Resource" path="res://resources/find_25.tres" id="r31"]
+[ext_resource type="Resource" path="res://resources/find_26.tres" id="r32"]
+[ext_resource type="Resource" path="res://resources/find_27.tres" id="r33"]
+[ext_resource type="Resource" path="res://resources/find_28.tres" id="r34"]
+[ext_resource type="Resource" path="res://resources/find_29.tres" id="r35"]
 
 [resource]
 script = ExtResource("1")
 vessels = Array[Resource]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5")])
-items = Array[Resource]([ExtResource("r6"), ExtResource("r7"), ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13"), ExtResource("r14"), ExtResource("r15"), ExtResource("r16"), ExtResource("r17"), ExtResource("r18"), ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23")])
+items = Array[Resource]([ExtResource("r6"), ExtResource("r7"), ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13"), ExtResource("r14"), ExtResource("r15"), ExtResource("r16"), ExtResource("r17"), ExtResource("r18"), ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28"), ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35")])

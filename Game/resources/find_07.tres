@@ -11,3 +11,4 @@ lore = "Quelque chose a gravé un niveau maximum sur sa panse."
 id = "find_07"
 journal_id = 7
 rarity = "Insolite"
+reveal_ml = 62000000.0

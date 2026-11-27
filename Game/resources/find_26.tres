@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_26"
+journal_id = 26
+title = "Astrolabe du pilote"
+region = 4
+value = 205
+shape = "astrolabe"
+lore = "Un cercle pour les étoiles et une flèche pour rentrer."
+rarity = "Exceptionnel"
+reveal_ml = 327000000.0
+story_page = false

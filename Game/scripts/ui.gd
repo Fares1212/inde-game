@@ -62,8 +62,8 @@ static func button(parent:Node,word:String,action:Callable,primary:=false)->Butt
 static func meter(parent:Node,wide_px:=148)->ProgressBar:
 	var b=ProgressBar.new();b.show_percentage=false;b.max_value=1
 	b.custom_minimum_size=Vector2(wide_px,7)
-	var bg=box_style(Color("#45615f"),Color.TRANSPARENT,4,0)
-	var fg=box_style(TEAL,Color.TRANSPARENT,4,0)
+	var bg=box_style(Color("#d5c7a9"),Color("#a69b80"),3,1)
+	var fg=box_style(Color("#34736d"),Color.TRANSPARENT,3,0)
 	for s in [bg,fg]:
 		s.content_margin_left=0;s.content_margin_top=0;s.content_margin_right=0;s.content_margin_bottom=0
 	b.add_theme_stylebox_override("background",bg);b.add_theme_stylebox_override("fill",fg)
@@ -168,3 +168,9 @@ class Binding extends Button:
 			listening=false;get_viewport().set_input_as_handled()
 			if ev.physical_keycode!=KEY_ESCAPE:Voyage.rebind(action,ev.physical_keycode)
 			refresh()
+
+static func atlas_tile(sheet:Texture2D,index:int,columns:int,tile_size:int)->AtlasTexture:
+	var tile:=AtlasTexture.new();tile.atlas=sheet
+	tile.region=Rect2((index%columns)*tile_size,floori(float(index)/columns)*tile_size,tile_size,tile_size)
+	tile.filter_clip=true
+	return tile

@@ -11,3 +11,4 @@ lore = "Elle a la même anse que la maison de Bernard. Il change de sujet."
 id = "find_04"
 journal_id = 4
 rarity = "Insolite"
+reveal_ml = 8500000.0

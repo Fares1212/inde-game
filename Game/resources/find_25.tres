@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_25"
+journal_id = 25
+title = "Couronne de corail"
+region = 3
+value = 140
+shape = "crown"
+lore = "Six pointes de corail encadrent un verre couleur de grenade."
+rarity = "Précieux"
+reveal_ml = 267000000.0
+story_page = false

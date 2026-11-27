@@ -82,7 +82,7 @@ func move(dt:float)->void:
 	if depth>.28:speed*=.78
 	speed*=1.-Voyage.vessel().slowdown*Voyage.p.bag/Voyage.capacity()
 	if running and Voyage.spill(dt)>0 and footprint_at<.1:coast.splash(position+Vector3.UP*.28)
-	var dest=position+dir*speed*dt
+	var dest:Vector3=coast.slide_past_boats(position,position+dir*speed*dt)
 	var dist=Vector2(dest.x,dest.z)
 	if dist.length()>96:
 		var limit=dist.limit_length(96)

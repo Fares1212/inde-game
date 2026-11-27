@@ -9,3 +9,5 @@ class_name ItemData
 @export var shape: String
 @export var stack_size: int = 12
 @export var journal_id: int
+@export var reveal_ml: float
+@export var story_page: bool = true

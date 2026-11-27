@@ -87,7 +87,7 @@ func show_album()->void:
 
 func credits()->void:
 	menu_panel.hide();var m=UI.modal(self,"Crédits","Générique",635,542);modal=m.root
-	UI.copy(m.body,"SPOONFUL • Édition 2.0.0\nConcept maritime original de Fares. Illustration du carnet réalisée avec Higgsfield. Vue de la crique capturée dans le jeu. Décors, personnages, effets, musique et bruitages créés pour ce jeu. Les voix utilisent des syllabes musicales en trois humeurs.")
+	UI.copy(m.body,"SPOONFUL • Édition 2.1.0\nConcept maritime original de Fares. Illustration du carnet réalisée avec Higgsfield. Vue de la crique capturée dans le jeu. Décors, personnages, effets, musique et bruitages créés pour ce jeu. Les voix utilisent des syllabes musicales en trois humeurs.")
 	UI.copy(m.body,"Moteur Godot 4.5.1 et composants distribués avec lui. Le texte de licence du moteur est reproduit ci-dessous.")
 	UI.copy(m.body,Engine.get_license_text(),13)
 	for entry in Engine.get_copyright_info():

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "find_29"
+journal_id = 29
+title = "Diadème des marées"
+region = 5
+value = 720
+shape = "diadem"
+lore = "Trois perles attendent l’aube autour d’une pierre couleur de lagon."
+rarity = "Trésor"
+reveal_ml = 487000000.0
+story_page = false

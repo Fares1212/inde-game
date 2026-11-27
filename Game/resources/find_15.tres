@@ -11,3 +11,4 @@ lore = "Bernard a toujours soutenu que ce modèle était décoratif."
 id = "find_15"
 journal_id = 15
 rarity = "Courant"
+reveal_ml = 430000000.0

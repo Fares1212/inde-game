@@ -11,3 +11,4 @@ lore = "Sur la quille, une écriture enfantine a signé « B. »."
 id = "find_08"
 journal_id = 8
 rarity = "Rare"
+reveal_ml = 82000000.0

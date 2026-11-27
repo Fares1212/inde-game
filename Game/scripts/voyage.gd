@@ -39,11 +39,12 @@ func _ready() -> void:
 	opt.glare = clampf(opt.glare,0.0,1.0)
 	opt.quality = clampi(int(opt.quality),0,2)
 	opt.resolution = clampi(int(opt.resolution),0,2)
-	for act in {"forward":KEY_W,"back":KEY_S,"left":KEY_A,"right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"use":KEY_E,"journal":KEY_J,"photo":KEY_F2,"debug_menu":KEY_F1}:
-		var keys={"forward":KEY_W,"back":KEY_S,"left":KEY_A,"right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"use":KEY_E,"journal":KEY_J,"photo":KEY_F2,"debug_menu":KEY_F1}
+	for act in {"forward":KEY_W,"back":KEY_S,"left":KEY_A,"right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"use":KEY_E,"journal":KEY_J,"photo":KEY_F4,"cheats":KEY_F2}:
+		var keys={"forward":KEY_W,"back":KEY_S,"left":KEY_A,"right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"use":KEY_E,"journal":KEY_J,"photo":KEY_F4,"cheats":KEY_F2}
 		if not InputMap.has_action(act): InputMap.add_action(act)
 		var key := InputEventKey.new()
 		key.physical_keycode = int(opt.bindings.get(act,keys[act]))
+		if act=="cheats" or (act!="cheats" and key.physical_keycode==KEY_F2):key.physical_keycode=keys[act]
 		InputMap.action_add_event(act,key)
 	for pair in [["forward",KEY_UP],["back",KEY_DOWN],["left",KEY_LEFT],["right",KEY_RIGHT]]:
 		var key := InputEventKey.new()
@@ -58,7 +59,7 @@ func _ready() -> void:
 	apply_display(false)
 
 func blank() -> Dictionary:
-	return {"schema":2,"basin":0,"marked_find":-1,"primer":false,"walk_time":0.0,"locked":0.0,"peak":0.0,"ending":"","endings":{},"returned":false,"free":false,"earned":0,"dikes":0,"bells":0,"trip_id":str(Time.get_unix_time_from_system()),"tier":0,"coins":0,"bag":0.0,"drained":0.0,"clock":0.0,"cargo":{},"seen":{},"taken":{},"drops":0,"scoops":0,"sales":0,"finished":false,"pos":[],"yaw":0.0,"pitch":-0.11,"seed":7129,"intro_done":false,"save_time":0,"visits":0}
+	return {"schema":3,"basin":0,"marked_find":-1,"primer":false,"walk_time":0.0,"saltwater_ml":0.0,"locked":0.0,"peak":0.0,"ending":"","endings":{},"returned":false,"free":false,"earned":0,"dikes":0,"bells":0,"trip_id":str(Time.get_unix_time_from_system()),"tier":0,"coins":0,"bag":0.0,"drained":0.0,"clock":0.0,"cargo":{},"seen":{},"taken":{},"drops":0,"scoops":0,"sales":0,"finished":false,"pos":[],"yaw":0.0,"pitch":-0.11,"seed":7129,"intro_done":false,"save_time":0,"visits":0}
 
 func new_run() -> void:
 	p = blank()
@@ -67,7 +68,7 @@ func new_run() -> void:
 	save_now()
 
 func valid_run(d: Dictionary) -> bool:
-	return int(d.get("schema",0)) in [1,2] and d.has("drained") and d.has("tier") and d.has("basin") and d.get("seen",{}) is Dictionary and d.get("taken",{}) is Dictionary and d.get("cargo",{}) is Dictionary
+	return int(d.get("schema",0)) in [1,2,3] and d.has("drained") and d.has("tier") and d.has("basin") and d.get("seen",{}) is Dictionary and d.get("taken",{}) is Dictionary and d.get("cargo",{}) is Dictionary
 
 func decode_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path): return {}
@@ -92,17 +93,24 @@ func continue_run() -> bool:
 	if int(from_disk.schema)==1:
 		if not write_json("voyage-v1-original",from_disk):return false
 		from_disk=migrate(from_disk)
-	p=blank()
-	for key in p:
-		if from_disk.has(key): p[key]=from_disk[key]
-	p.tier=clampi(int(p.tier),0,5)
-	p.basin=0
-	p.peak=maxf(p.drained,p.peak)
-	p.coins=maxi(0,int(p.coins))
-	p.drained=clampf(float(p.drained),0.0,total())
-	p.bag=clampf(float(p.bag),0.0,capacity())
+	p=restore_state(from_disk)
 	run_active=true
 	return true
+
+func restore_state(old:Dictionary)->Dictionary:
+	var state:=blank()
+	for key in state:
+		if old.has(key):state[key]=old[key]
+	state.tier=clampi(int(state.tier),0,RULES.vessels.size()-1)
+	state.basin=0
+	state.coins=maxi(0,int(state.coins))
+	state.bag=clampf(float(state.bag),0.,RULES.vessels[state.tier].capacity)
+	state.drained=clampf(float(state.drained),0.,total())
+	# Before schema 3, water carried in a vessel had not yet left the recorded sea.
+	if int(old.get("schema",2))<3:state.drained=minf(total(),state.drained+state.bag)
+	state.schema=3
+	state.peak=clampf(maxf(state.peak,state.drained),0.,total())
+	return state
 
 func write_json(stem: String,d: Dictionary) -> bool:
 	var base=ProjectSettings.globalize_path(storage+stem)
@@ -159,7 +167,7 @@ func migrate(old:Dictionary)->Dictionary:
 	d.bag=clampf(float(old.get("bag",0))/maxf(1.,round(old_capacity)),0,1)*RULES.vessels[level].capacity
 	d.drained=clampf(float(old.drained)/(1e8*pow(1.55,cycle)),0,1)*total()
 	if old.get("finished",false):d.drained=total();d.tier=5
-	d.peak=d.drained;d.primer=level>0 or cycle>0;d.earned=int(d.coins)
+	d.schema=2;d.peak=d.drained;d.primer=level>0 or cycle>0;d.earned=int(d.coins)
 	for field in ["seen","cargo"]:
 		for index in old.get(field,{}):
 			if str(index).is_valid_int() and int(index)>=0 and int(index)<RULES.items.size():
@@ -223,6 +231,7 @@ func tick(dt: float) -> void:
 		if p.free:p["walk_time"]=float(p.get("walk_time",0.))+dt
 		return
 	p.clock+=dt
+	p.saltwater_ml=maxf(0.,float(p.saltwater_ml)-dt*float(p.saltwater_ml)*.00040)
 	if not plug_ready():
 		var backflow:=maxf(0,cos(tide_phase()))*float(p.drained)*RULES.return_fraction_per_second
 		p.drained=clampf(p.drained+dt*(vessel().auto_rate*(1.-tide()*.3)-backflow),p.locked,total())
@@ -234,30 +243,32 @@ func tick(dt: float) -> void:
 
 func scoop() -> float:
 	if p.finished: return 0.0
-	var amount=minf(capacity()-p.bag,minf(total()-p.drained-p.bag,vessel().scoop))
-	if amount<=0: return 0.0
+	var left:=total()-float(p.drained)
+	if left<=0 or p.bag>=capacity():return 0.
+	var pressure:float=RULES.primer_leverage if p.tier==0 and p.primer else vessel().leverage
+	var amount:=minf(capacity()-p.bag,minf(left,vessel().scoop))
+	# The intake opens as the vessel dips. A primed pump also draws water directly.
 	p.bag+=amount
+	var removed:=minf(left,amount*pressure)
+	p.drained=minf(total(),p.drained+removed)
+	p.saltwater_ml=minf(2400000.,p.saltwater_ml+maxf(0.,removed-amount))
+	p.peak=maxf(p.peak,p.drained)
 	p.scoops+=1
-	changed.emit()
+	save_now();changed.emit()
 	return amount
 
 func pour() -> float:
-	if p.bag<=0 or p.finished: return 0.0
-	var pressure:float=RULES.primer_leverage if p.tier==0 and p.primer else vessel().leverage
-	var moved=minf(p.bag*pressure,total()-p.drained)
-	if moved>0:
-		var reward:=roundi(vessel().delivery*float(p.bag)/capacity())
-		p.coins+=reward;p.earned+=reward
-		p.drained=minf(total(),p.drained+moved)
-		p.peak=maxf(p.peak,p.drained)
-		p.drops+=1
-	p.bag=0.0
-	save_now()
-	changed.emit()
-	return moved
+	if p.bag<=0 or p.finished:return 0.
+	var delivered:float=p.bag
+	var reward:=roundi(vessel().delivery*delivered/capacity())
+	p.coins+=reward;p.earned+=reward;p.drops+=1
+	p.saltwater_ml=minf(2400000.,p.saltwater_ml+delivered)
+	p.bag=0.
+	save_now();changed.emit()
+	return delivered
 
 func collect(id: int,kind: int) -> bool:
-	if kind<0 or kind>=RULES.items.size() or (kind==16 and p.seen.has("find_16")) or not Inventory.take(p,id,RULES.items[kind]):return false
+	if kind<0 or kind>=RULES.items.size() or p.peak<RULES.items[kind].reveal_ml or (kind==16 and p.seen.has("find_16")) or not Inventory.take(p,id,RULES.items[kind]):return false
 	if int(p.marked_find)==id:p.marked_find=-1
 	save_now();changed.emit();return true
 
@@ -297,7 +308,12 @@ func return_key()->bool:
 	if p.returned or not p.seen.has("find_16"):return false
 	p.returned=true;p.cargo.erase("find_16");save_now();changed.emit();return true
 
-func can_home()->bool:return p.returned and p.seen.size()==RULES.items.size()
+func can_home()->bool:
+	if not p.returned:return false
+	# The twelve optional valuables do not invalidate a completed story collection.
+	for item:ItemData in RULES.items:
+		if item.story_page and not p.seen.has(item.id):return false
+	return true
 
 func choose_ending(which:String)->bool:
 	if not plug_ready() or p.finished or which not in ["tide","empty","home"] or (which=="home" and not can_home()):return false
@@ -309,7 +325,7 @@ func rewind()->bool:
 	var last:=read_json("dernier-rivage")
 	if last.is_empty() or last.get("trip_id","")!=p.trip_id:return false
 	var endings:Dictionary=p.endings.duplicate()
-	p=last;p.endings=endings;p.finished=false;p.free=false;p.ending="";save_now();return true
+	p=restore_state(last);p.endings=endings;p.finished=false;p.free=false;p.ending="";save_now();return true
 
 func percent(ratio:float)->String:
 	if ratio>0 and ratio<.00001:return "< 0,001 %"
@@ -328,6 +344,7 @@ func volume(ml:float)->String:
 	return ("%.2f"%(ml/1000000.)).replace(".",",")+" m³"
 
 func rebind(action:String,code:int)->void:
+	if code==KEY_F2:return
 	for event in InputMap.action_get_events(action):
 		if event is InputEventKey:InputMap.action_erase_event(action,event)
 	var key:=InputEventKey.new();key.physical_keycode=code;InputMap.action_add_event(action,key)

@@ -11,3 +11,4 @@ lore = "Quatre bords droits. Un angle de salle de bain dans un récif."
 id = "find_05"
 journal_id = 5
 rarity = "Rare"
+reveal_ml = 15500000.0

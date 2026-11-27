@@ -11,3 +11,4 @@ lore = "Elle porte le profil d’un mollusque qui avait visiblement du pouvoir."
 id = "find_01"
 journal_id = 1
 rarity = "Insolite"
+reveal_ml = 15.0
